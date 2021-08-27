@@ -3,32 +3,32 @@
 
 %{
 
-let get_loc = Parsing.symbol_start_pos 
+let get_loc = Parsing.symbol_start_pos
 
 %}
 
 /* Tokens and types */
 %token<int> INT
 %token<string> IDENT
-%token EOF LPAREN RPAREN COMMA COLON SEMICOLON ADD SUB MUL DIV NOT EQUAL LT ANDOP OROP 
-%token WHAT UNIT AND TRUE FALSE IF FI THEN ELSE LET REC IN BEGIN END BOOL INTTYPE UNITTYPE 
-%token ARROW BAR INL INR FST SND FUN NUF CASE OF REF ASSIGN BANG WHILE DO OD 
+%token EOF LPAREN RPAREN COMMA COLON SEMICOLON ADD SUB MUL DIV NOT EQUAL LT ANDOP OROP
+%token WHAT UNIT AND TRUE FALSE IF FI THEN ELSE LET REC IN BEGIN END BOOL INTTYPE UNITTYPE
+%token ARROW BAR INL INR FST SND FUN NUF CASE OF REF ASSIGN BANG WHILE DO OD
 
 %left ADD SUB                     /* lowest precedence */
 %left MUL DIV ANDOP OROP EQUAL ARROW  LT /* medium precedence */
-%left ASSIGN              
+%left ASSIGN
 /*
-%nonassoc THEN    
-%nonassoc ELSE    
-*/ 
-%nonassoc UMINUS                  
+%nonassoc THEN
+%nonassoc ELSE
+*/
+%nonassoc UMINUS
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc UNIT INT WHAT IDENT TRUE FALSE LPAREN NOT BANG REF /* highest precedence */
-                   
+
 %start start
 %type <Past.type_expr> texpr
-%type <Past.expr> simple_expr 
-%type <Past.expr> expr 
+%type <Past.expr> simple_expr
+%type <Past.expr> expr
 %type <Past.expr list> exprlist
 %type <Past.expr> start
 
@@ -36,19 +36,19 @@ let get_loc = Parsing.symbol_start_pos
 
 /* Grammar  */
 
-start: 
+start:
 | expr EOF { $1 }
 
-/* problem 
-   -e  (unary minus) 
-    e e (application) 
-    e1 - e2  (is the e1(-e2) or e1-e2???) 
+/* problem
+   -e  (unary minus)
+    e e (application)
+    e1 - e2  (is the e1(-e2) or e1-e2???)
 */
 
 simple_expr:
 | UNIT                               { Past.Unit (get_loc())}
 | INT                                { Past.Integer (get_loc(), $1) }
-| WHAT                               { Past.What (get_loc())} 
+| WHAT                               { Past.What (get_loc())}
 | IDENT                              { Past.Var (get_loc(), $1) }
 | TRUE                               { Past.Boolean (get_loc(), true)}
 | FALSE                              { Past.Boolean (get_loc(), false)}
@@ -60,8 +60,8 @@ simple_expr:
 
 expr:
 | simple_expr                        {  $1 }
-| expr simple_expr                   { Past.App (get_loc(), $1, $2) } 
-| SUB expr %prec UNIT                { Past.UnaryOp(get_loc(), Past.NEG, $2) } 
+| expr simple_expr                   { Past.App (get_loc(), $1, $2) }
+| SUB expr %prec UNIT                { Past.UnaryOp(get_loc(), Past.NEG, $2) }
 | expr ADD expr                      { Past.Op(get_loc(), $1, Past.ADD, $3) }
 | expr SUB expr                      { Past.Op(get_loc(), $1, Past.SUB, $3) }
 | expr MUL expr                      { Past.Op(get_loc(), $1, Past.MUL, $3) }
@@ -78,15 +78,15 @@ expr:
 | SND expr %prec UMINUS              { Past.Snd(get_loc(), $2) }
 | INL texpr expr %prec UMINUS        { Past.Inl(get_loc(), $2, $3) }
 | INR texpr expr %prec UMINUS        { Past.Inr(get_loc(), $2, $3) }
-| FUN LPAREN IDENT COLON texpr RPAREN ARROW expr END 
-                                     { Past.Lambda(get_loc(), ($3, $5, $8)) } 
+| FUN LPAREN IDENT COLON texpr RPAREN ARROW expr END
+                                     { Past.Lambda(get_loc(), ($3, $5, $8)) }
 | LET IDENT COLON texpr EQUAL expr IN expr END           { Past.Let (get_loc(), $2, $4, $6, $8) }
-| LET IDENT LPAREN IDENT COLON texpr RPAREN COLON texpr EQUAL expr IN expr END 
+| LET IDENT LPAREN IDENT COLON texpr RPAREN COLON texpr EQUAL expr IN expr END
                                      { Past.LetFun (get_loc(), $2, ($4, $6, $11), $9, $13) }
-| CASE expr OF 
-      INL LPAREN IDENT COLON texpr RPAREN ARROW expr 
-  BAR INR LPAREN IDENT COLON texpr RPAREN  ARROW expr 
-  END 
+| CASE expr OF
+      INL LPAREN IDENT COLON texpr RPAREN ARROW expr
+  BAR INR LPAREN IDENT COLON texpr RPAREN  ARROW expr
+  END
                                      { Past.Case (get_loc(), $2, ($6, $8, $11), ($15, $17, $20)) }
 
 exprlist:
@@ -94,16 +94,12 @@ exprlist:
 |   expr  SEMICOLON exprlist         { $1 :: $3  }
 
 
-texpr: 
+texpr:
 | BOOL                               { Past.TEbool  }
 | INTTYPE                            { Past.TEint  }
 | UNITTYPE                           { Past.TEunit  }
 | texpr ARROW texpr                  { Past.TEarrow ($1, $3)}
 | texpr MUL texpr                    { Past.TEproduct ($1, $3)}
 | texpr ADD texpr                    { Past.TEunion ($1, $3)}
-| texpr REF                          { Past.TEref $1 } 
-| LPAREN texpr RPAREN                { $2 } 
-
-
-
-
+| texpr REF                          { Past.TEref $1 }
+| LPAREN texpr RPAREN                { $2 }

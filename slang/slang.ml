@@ -46,7 +46,7 @@ let interpreters = [
     (Option.use_i3 && not(Option.show_compiled), i3,   "Interpreter 3");
     (Option.show_compiled && Option.use_i3     , i3cc, "Interpreter 3, compiled code");
     (Option.use_i4 && not(Option.show_compiled), i4,   "Jargon VM"    );
-    (Option.use_i4x86 ,                          i4x86,"Jargon code to x86");    
+    (Option.use_i4x86 ,                          i4x86,"Jargon code to x86");
     (Option.show_compiled && Option.use_i4     , i4cc, "Jargon, compiled code")
 ]
 
@@ -105,8 +105,3 @@ let _ = process_inputs
         then (try Tests.get_all_tests ()
               with Errors.Error s -> fatal_error "tests/" "Test.get_all_tests" s)
         else [(Option.infile, None)])
-
-
-
-
-

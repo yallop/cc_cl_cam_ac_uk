@@ -1,5 +1,4 @@
 
-exception Error of string 
+exception Error of string
 
-val complain : string -> 'a 
-
+val complain : string -> 'a
