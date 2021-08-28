@@ -5,4 +5,4 @@
      free vars of e that are not contained in bvars. 
 
 *) 
-val free_vars : (Past.var list) * Ast.expr -> (Past.var list)
+val free_vars : (Past.var list) * ('a Ast.expr) -> (Past.var list)

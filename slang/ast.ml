@@ -5,31 +5,31 @@ type oper = ADD | MUL | DIV | SUB | LT | AND | OR | EQB | EQI [@@deriving yojson
 
 type unary_oper = NEG | NOT | READ [@@deriving yojson]
 
-type expr = 
-       | Unit  
-       | Var of var
-       | Integer of int
-       | Boolean of bool
-       | UnaryOp of unary_oper * expr
-       | Op of expr * oper * expr
-       | If of expr * expr * expr
-       | Pair of expr * expr
-       | Fst of expr 
-       | Snd of expr 
-       | Inl of expr 
-       | Inr of expr 
-       | Case of expr * lambda * lambda 
-       | While of expr * expr 
-       | Seq of (expr list)
-       | Ref of expr 
-       | Deref of expr 
-       | Assign of expr * expr 
-       | Lambda of lambda 
-       | App of expr * expr
-       | LetFun of var * lambda * expr
-       | LetRecFun of var * lambda * expr
+type 'a expr =
+       | Unit of 'a
+       | Var of 'a * var
+       | Integer of 'a * int
+       | Boolean of 'a * bool
+       | UnaryOp of 'a * unary_oper * 'a expr
+       | Op of 'a * 'a expr * oper * 'a expr
+       | If of 'a * 'a expr * 'a expr * 'a expr
+       | Pair of 'a * 'a expr * 'a expr
+       | Fst of 'a * 'a expr
+       | Snd of 'a * 'a expr
+       | Inl of 'a * 'a expr
+       | Inr of 'a * 'a expr
+       | Case of 'a * 'a expr * 'a lambda * 'a lambda
+       | While of 'a * 'a expr * 'a expr
+       | Seq of 'a * 'a expr list
+       | Ref of 'a * 'a expr
+       | Deref of 'a * 'a expr
+       | Assign of 'a * 'a expr * 'a expr
+       | Lambda of 'a lambda
+       | App of 'a * 'a expr * 'a expr
+       | LetFun of 'a * var * 'a lambda * 'a expr
+       | LetRecFun of 'a * var * 'a lambda * 'a expr
 
-and lambda = var * expr 
+and 'a lambda = 'a * var * 'a expr
 
 
 open Format
@@ -67,37 +67,37 @@ let pp_unary ppf t = fstring ppf (pp_uop t)
 
 let pp_binary ppf t = fstring ppf (pp_bop t) 
 
-let rec pp_expr ppf = function 
-    | Unit             -> fstring ppf "()" 
-    | Var x            -> fstring ppf x 
-    | Integer n        -> fstring ppf (string_of_int n)
-    | Boolean b        -> fstring ppf (string_of_bool b)
-    | UnaryOp(op, e)   -> fprintf ppf "%a(%a)" pp_unary op pp_expr e 
-    | Op(e1, op, e2)   -> fprintf ppf "(%a %a %a)" pp_expr e1  pp_binary op pp_expr e2 
-    | If(e1, e2, e3)   -> fprintf ppf "@[if %a then %a else %a @]" 
+let rec pp_expr ppf = function
+    | Unit _               -> fstring ppf "()"
+    | Var(_, x)            -> fstring ppf x
+    | Integer(_, n)        -> fstring ppf (string_of_int n)
+    | Boolean(_, b)        -> fstring ppf (string_of_bool b)
+    | UnaryOp(_, op, e)    -> fprintf ppf "%a(%a)" pp_unary op pp_expr e
+    | Op(_, e1, op, e2)    -> fprintf ppf "(%a %a %a)" pp_expr e1  pp_binary op pp_expr e2
+    | If(_, e1, e2, e3)    -> fprintf ppf "@[if %a then %a else %a @]"
                                       pp_expr e1 pp_expr e2 pp_expr e3
-    | Pair(e1, e2)     -> fprintf ppf "(%a, %a)" pp_expr e1 pp_expr e2
-    | Fst e            -> fprintf ppf "fst(%a)" pp_expr e
-    | Snd e            -> fprintf ppf "snd(%a)" pp_expr e
-    | Inl e            -> fprintf ppf "inl(%a)" pp_expr e
-    | Inr e            -> fprintf ppf "inr(%a)" pp_expr e
-    | Case(e, (x1, e1), (x2, e2)) -> 
-        fprintf ppf "@[<2>case %a of@ | inl %a -> %a @ | inr %a -> %a end@]" 
-                     pp_expr e fstring x1 pp_expr e1 fstring x2 pp_expr e2 
-    | Lambda(x, e) -> 
+    | Pair(_, e1, e2)      -> fprintf ppf "(%a, %a)" pp_expr e1 pp_expr e2
+    | Fst(_, e)            -> fprintf ppf "fst(%a)" pp_expr e
+    | Snd(_, e)            -> fprintf ppf "snd(%a)" pp_expr e
+    | Inl(_, e)            -> fprintf ppf "inl(%a)" pp_expr e
+    | Inr(_, e)            -> fprintf ppf "inr(%a)" pp_expr e
+    | Case(_, e, (_, x1, e1), (_, x2, e2)) ->
+        fprintf ppf "@[<2>case %a of@ | inl %a -> %a @ | inr %a -> %a end@]"
+                     pp_expr e fstring x1 pp_expr e1 fstring x2 pp_expr e2
+    | Lambda(_, x, e) ->
          fprintf ppf "(fun %a -> %a)" fstring x pp_expr e
-    | App(e1, e2)      -> fprintf ppf "%a %a" pp_expr e1 pp_expr e2
+    | App(_, e1, e2)       -> fprintf ppf "%a %a" pp_expr e1 pp_expr e2
 
-    | Seq el           -> fprintf ppf "begin %a end" pp_expr_list el 
-    | While (e1, e2)   -> fprintf ppf "while %a do %a end" pp_expr e1 pp_expr e2 
-    | Ref e            -> fprintf ppf "ref(%a)" pp_expr e 
-    | Deref e          -> fprintf ppf "!(%a)" pp_expr e 
-    | Assign (e1, e2)  -> fprintf ppf "(%a := %a)" pp_expr e1 pp_expr e2 
-    | LetFun(f, (x, e1), e2)     -> 
-         fprintf ppf "@[let %a(%a) =@ %a @ in %a @ end@]" 
+    | Seq(_, el)           -> fprintf ppf "begin %a end" pp_expr_list el
+    | While(_, e1, e2)     -> fprintf ppf "while %a do %a end" pp_expr e1 pp_expr e2
+    | Ref(_, e)            -> fprintf ppf "ref(%a)" pp_expr e
+    | Deref(_, e)          -> fprintf ppf "!(%a)" pp_expr e
+    | Assign(_, e1, e2)    -> fprintf ppf "(%a := %a)" pp_expr e1 pp_expr e2
+    | LetFun(_, f, (_, x, e1), e2)     ->
+         fprintf ppf "@[let %a(%a) =@ %a @ in %a @ end@]"
                      fstring f fstring x  pp_expr e1 pp_expr e2
-    | LetRecFun(f, (x, e1), e2)  -> 
-         fprintf ppf "@[letrec %a(%a) =@ %a @ in %a @ end@]" 
+    | LetRecFun(_, f, (_, x, e1), e2)  ->
+         fprintf ppf "@[letrec %a(%a) =@ %a @ in %a @ end@]"
                      fstring f fstring x  pp_expr e1 pp_expr e2
 and pp_expr_list ppf = function 
   | [] -> () 
@@ -140,31 +140,31 @@ let mk_con con l =
       | s::rest -> aux (carry ^ s ^ ", ") rest 
     in aux (con ^ "(") l 
 
-let rec string_of_expr = function 
-    | Unit             -> "Unit" 
-    | Var x            -> mk_con "Var" [x] 
-    | Integer n        -> mk_con "Integer" [string_of_int n] 
-    | Boolean b        -> mk_con "Boolean" [string_of_bool b] 
-    | UnaryOp(op, e)   -> mk_con "UnaryOp" [string_of_uop op; string_of_expr e]
-    | Op(e1, op, e2)   -> mk_con "Op" [string_of_expr e1; string_of_bop op; string_of_expr e2]
-    | If(e1, e2, e3)   -> mk_con "If" [string_of_expr e1; string_of_expr e2; string_of_expr e3]
-    | Pair(e1, e2)     -> mk_con "Pair" [string_of_expr e1; string_of_expr e2]
-    | Fst e            -> mk_con "Fst" [string_of_expr e] 
-    | Snd e            -> mk_con "Snd" [string_of_expr e] 
-    | Inl e            -> mk_con "Inl" [string_of_expr e] 
-    | Inr e            -> mk_con "Inr" [string_of_expr e] 
-    | Lambda(x, e)     -> mk_con "Lambda" [x; string_of_expr e]
-    | App(e1, e2)      -> mk_con "App" [string_of_expr e1; string_of_expr e2]
-    | Seq el           -> mk_con "Seq" [string_of_expr_list el] 
-    | While (e1, e2)   -> mk_con "While" [string_of_expr e1; string_of_expr e2]
-    | Ref e            -> mk_con "Ref" [string_of_expr e] 
-    | Deref e          -> mk_con "Deref" [string_of_expr e] 
-    | Assign (e1, e2)  -> mk_con "Assign" [string_of_expr e1; string_of_expr e2]
-    | LetFun(f, (x, e1), e2)      -> 
+let rec string_of_expr = function
+    | Unit _            -> "Unit"
+    | Var(l, x)            -> mk_con "Var" [x]
+    | Integer(l, n)        -> mk_con "Integer" [string_of_int n]
+    | Boolean(l, b)        -> mk_con "Boolean" [string_of_bool b]
+    | UnaryOp(_, op, e)   -> mk_con "UnaryOp" [string_of_uop op; string_of_expr e]
+    | Op(_, e1, op, e2)   -> mk_con "Op" [string_of_expr e1; string_of_bop op; string_of_expr e2]
+    | If(_, e1, e2, e3)   -> mk_con "If" [string_of_expr e1; string_of_expr e2; string_of_expr e3]
+    | Pair(_, e1, e2)     -> mk_con "Pair" [string_of_expr e1; string_of_expr e2]
+    | Fst(l, e)            -> mk_con "Fst" [string_of_expr e]
+    | Snd(l, e)            -> mk_con "Snd" [string_of_expr e]
+    | Inl(l, e)            -> mk_con "Inl" [string_of_expr e]
+    | Inr(l, e)            -> mk_con "Inr" [string_of_expr e]
+    | Lambda(_, x, e)     -> mk_con "Lambda" [x; string_of_expr e]
+    | App(_, e1, e2)      -> mk_con "App" [string_of_expr e1; string_of_expr e2]
+    | Seq(_, el)           -> mk_con "Seq" [string_of_expr_list el]
+    | While(_, e1, e2)   -> mk_con "While" [string_of_expr e1; string_of_expr e2]
+    | Ref(l, e)            -> mk_con "Ref" [string_of_expr e]
+    | Deref(l, e)          -> mk_con "Deref" [string_of_expr e]
+    | Assign (_, e1, e2)  -> mk_con "Assign" [string_of_expr e1; string_of_expr e2]
+    | LetFun(_, f, (_, x, e1), e2)      ->
           mk_con "LetFun" [f; mk_con "" [x; string_of_expr e1]; string_of_expr e2]
-    | LetRecFun(f, (x, e1), e2)   -> 
+    | LetRecFun(_, f, (_, x, e1), e2)   ->
           mk_con "LetRecFun" [f; mk_con "" [x; string_of_expr e1]; string_of_expr e2]
-    | Case(e, (x1, e1), (x2, e2)) -> 
+    | Case(_, e, (_, x1, e1), (_, x2, e2)) ->
           mk_con "Case" [
               string_of_expr e; 
 	      mk_con "" [x1; string_of_expr e1]; 
@@ -175,3 +175,53 @@ and string_of_expr_list = function
   | [e] -> string_of_expr e 
   |  e:: rest -> (string_of_expr e ) ^ "; " ^ (string_of_expr_list rest)
 
+let rec map f = function
+| Unit a            -> Unit(f a)
+| Var(a, x)            -> Var(f a, x)
+| Integer(a, n)        -> Integer(f a, n)
+| Boolean(a, b)        -> Boolean(f a, b)
+| UnaryOp(a, op, e)   -> UnaryOp(f a, op, map f e)
+| Op(a, e1, op, e2)   -> Op(f a, map f e1, op, map f e2)
+| If(a, e1, e2, e3)   -> If(f a, map f e1, map f e2, map f e3)
+| Pair(a, e1, e2)     -> Pair(f a, map f e1, map f e2)
+| Fst(a, e)            -> Fst(f a, map f e)
+| Snd(a, e)            -> Snd(f a, map f e)
+| Inl(a, e)            -> Inl(f a, map f e)
+| Inr(a, e)            -> Inr(f a, map f e)
+| Lambda(a, x, e)     -> Lambda(f a, x, map f e)
+| App(a, e1, e2)      -> App(f a, map f e1, map f e2)
+| Seq(a, el)           -> Seq(f a, List.map (map f) el)
+| While(a, e1, e2)   -> While(f a, map f e1, map f e2)
+| Ref(a, e)            -> Ref(f a, map f e)
+| Deref(a, e)          -> Deref(f a, map f e)
+| Assign (a, e1, e2)  -> Assign (f a, map f e1, map f e2)
+| LetFun(a, f', (a', x, e1), e2)      ->
+      LetFun(f a, f', (f a', x, map f e1), map f e2)
+| LetRecFun(a, f', (a', x, e1), e2)   ->
+      LetRecFun(f a, f', (f a', x, map f e1), map f e2)
+| Case(a, e, (a', x1, e1), (a'', x2, e2)) ->
+      Case(f a, map f e, (f a', x1, map f e1), (f a'', x2, map f e2))
+
+let get_tag = function
+| Unit a            -> a
+| Var(a, _)            -> a
+| Integer(a, _)        -> a
+| Boolean(a, _)        -> a
+| UnaryOp(a, _, _)   -> a
+| Op(a, _, _, _)   -> a
+| If(a, _, _, _)   -> a
+| Pair(a, _, _)     -> a
+| Fst(a, _)            -> a
+| Snd(a, _)            -> a
+| Inl(a, _)            -> a
+| Inr(a, _)            -> a
+| Lambda(a, _, _)     -> a
+| App(a, _, _)      -> a
+| Seq(a, _)           -> a
+| While(a, _, _)   -> a
+| Ref(a, _)            -> a
+| Deref(a, _)          -> a
+| Assign (a, _, _)  -> a
+| LetFun(a, _, _, _)      -> a
+| LetRecFun(a, _, _, _)   -> a
+| Case(a, _, _, _) -> a
