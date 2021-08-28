@@ -18,63 +18,66 @@ What do I mean by "high-level"?
 
 open Ast 
 
+module IntMap = Map.Make(struct type t = int let compare = compare end)
+
 let complain = Errors.complain
 
 type address = int [@@deriving yojson]
 
 type var = string [@@deriving yojson]
 
-type value = 
-     | REF of address 
-     | INT of int 
-     | BOOL of bool 
+type 'a value =
+     | REF of address
+     | INT of int
+     | BOOL of bool
      | UNIT
-     | PAIR of value * value 
-     | INL of value 
-     | INR of value 
-     | CLOSURE of closure    
-     | REC_CLOSURE of code [@@deriving yojson]
+     | PAIR of 'a value * 'a value
+     | INL of 'a value
+     | INR of 'a value
+     | CLOSURE of 'a closure
+     | REC_CLOSURE of 'a code [@@deriving yojson]
 
-and closure = code * env 
+and 'a closure = 'a code * 'a env 
 
-and instruction = 
-  | PUSH of value 
-  | LOOKUP of var 
-  | UNARY of unary_oper 
-  | OPER of oper 
-  | ASSIGN 
-  | SWAP
-  | POP 
-  | BIND of var 
-  | FST
-  | SND
-  | DEREF 
-  | APPLY
-  | MK_PAIR 
-  | MK_INL
-  | MK_INR
-  | MK_REF 
-  | MK_CLOSURE of code 
-  | MK_REC of var * code 
-  | TEST of code * code
-  | CASE of code * code
-  | WHILE of code * code
 
-and code = instruction list 
+and 'a instruction =
+  | PUSH of 'a * 'a value
+  | LOOKUP of 'a * var
+  | UNARY of 'a * Ast.unary_oper
+  | OPER of 'a * Ast.oper
+  | ASSIGN of 'a
+  | SWAP of 'a
+  | POP of 'a
+  | BIND of 'a * var
+  | FST of 'a
+  | SND of 'a
+  | DEREF of 'a
+  | APPLY of 'a
+  | MK_PAIR of 'a
+  | MK_INL of 'a
+  | MK_INR of 'a
+  | MK_REF of 'a
+  | MK_CLOSURE of 'a * 'a code
+  | MK_REC of 'a * var * 'a code
+  | TEST of 'a * 'a code * 'a code
+  | CASE of 'a * 'a code * 'a code
+  | WHILE of 'a * 'a code * 'a code
 
-and binding = var * value
+and 'a code = 'a instruction list
 
-and env = binding list
+and 'a binding = Ast.var * 'a value
 
-type env_or_value = EV of env | V of value [@@deriving yojson]
+and 'a env = 'a binding list
 
-type env_value_stack = env_or_value list [@@deriving yojson]
+type 'a env_or_value = EV of 'a env | V of 'a value
+
+type 'a env_value_stack = 'a env_or_value list [@@deriving yojson]
 
 (* This is the the slang program state --- that is, values for references *) 
 (* It is an array of referenced values together with next unallocated address *)
-type state = (value array) * int [@@deriving yojson]
+type 'a state = ('a value IntMap.t) * int
 
-type interp_state = code * env_value_stack * state [@@deriving yojson]
+type 'a interp_state = 'a code * 'a env_value_stack * 'a state [@@deriving yojson]
 
 (* Printing *) 
 
@@ -103,28 +106,28 @@ and string_of_env env = string_of_list ",\n " string_of_binding env
 
 and string_of_binding (x, v) =    "(" ^ x ^ ", " ^ (string_of_value v) ^ ")"
 
-and string_of_instruction = function 
- | UNARY op     -> "UNARY " ^ (string_of_uop op) 
- | OPER op      -> "OPER " ^ (string_of_bop op) 
- | MK_PAIR      -> "MK_PAIR"
- | FST          -> "FST"
- | SND          -> "SND"
- | MK_INL       -> "MK_INL"
- | MK_INR       -> "MK_INR"
- | MK_REF       -> "MK_REF"
- | PUSH v       -> "PUSH " ^ (string_of_value v) 
- | LOOKUP x     -> "LOOKUP " ^ x
- | TEST(c1, c2) -> "TEST(" ^ (string_of_code c1) ^ ", " ^ (string_of_code c2) ^ ")"
- | CASE(c1, c2) -> "CASE(" ^ (string_of_code c1) ^ ", " ^ (string_of_code c2) ^ ")"
- | WHILE(c1, c2) -> "WHILE(" ^ (string_of_code c1) ^ ", " ^ (string_of_code c2) ^ ")"
- | APPLY        -> "APPLY"
- | BIND x       -> "BIND " ^ x
- | SWAP         -> "SWAP"
- | POP          -> "POP"
- | DEREF        -> "DEREF"
- | ASSIGN       -> "ASSIGN"
- | MK_CLOSURE c -> "MK_CLOSURE(" ^ (string_of_code c) ^ ")" 
- | MK_REC(f, c) -> "MK_REC(" ^ f ^ ", " ^ (string_of_code c) ^ ")"
+and string_of_instruction = function
+ | UNARY(_, op)     -> "UNARY " ^ (string_of_uop op)
+ | OPER(_, op)      -> "OPER " ^ (string_of_bop op)
+ | MK_PAIR _        -> "MK_PAIR"
+ | FST _            -> "FST"
+ | SND _            -> "SND"
+ | MK_INL _         -> "MK_INL"
+ | MK_INR _         -> "MK_INR"
+ | MK_REF _         -> "MK_REF"
+ | PUSH(_, v)       -> "PUSH " ^ (string_of_value v)
+ | LOOKUP(_, x)     -> "LOOKUP " ^ x
+ | TEST(_, c1, c2) -> "TEST(" ^ (string_of_code c1) ^ ", " ^ (string_of_code c2) ^ ")"
+ | CASE(_, c1, c2) -> "CASE(" ^ (string_of_code c1) ^ ", " ^ (string_of_code c2) ^ ")"
+ | WHILE(_, c1, c2) -> "WHILE(" ^ (string_of_code c1) ^ ", " ^ (string_of_code c2) ^ ")"
+ | APPLY _       -> "APPLY"
+ | BIND(_, x)       -> "BIND " ^ x
+ | SWAP _         -> "SWAP"
+ | POP _         -> "POP"
+ | DEREF _       -> "DEREF"
+ | ASSIGN _       -> "ASSIGN"
+ | MK_CLOSURE(_, c) -> "MK_CLOSURE(" ^ (string_of_code c) ^ ")"
+ | MK_REC(_, f, c) -> "MK_REC(" ^ f ^ ", " ^ (string_of_code c) ^ ")"
 
 and string_of_code c = string_of_list ";\n " string_of_instruction c 
 
@@ -132,13 +135,13 @@ let string_of_env_or_value = function
   | EV env -> "EV " ^ (string_of_env env)
   | V v -> "V " ^ (string_of_value v)
 
-let string_of_env_value_stack = string_of_list ";\n " string_of_env_or_value 
+let string_of_env_value_stack n = string_of_list ";\n " string_of_env_or_value n
 
 let string_of_state (heap, i)  = 
     let rec aux k = 
             if i < k 
 	    then "" 
-	    else (string_of_int k) ^ " -> " ^ (string_of_value (heap.(k))) ^ "\n" ^ (aux (k+1)) 
+	    else (string_of_int k) ^ " -> " ^ (string_of_value (IntMap.find k heap)) ^ "\n" ^ (aux (k+1))
     in if i = 0
        then ""
        else "\nHeap = \n" ^ (aux 0) 
@@ -155,14 +158,14 @@ let string_of_interp_state (c, evs, s) =
 *) 
 let allocate (heap, i) v = 
     if i < Option.heap_max 
-    then let _ = heap.(i) <- v
+    then let heap = IntMap.add i v heap
          in (i, (heap, i+1))
     else complain "runtime error: heap kaput"
 
-let deref (heap, _) a = heap.(a)
+let deref (heap, _) a = IntMap.find a heap
 
 let assign (heap, i) a v =
-    let _ = heap.(a) <- v
+    let heap = IntMap.add a v heap
     in (heap, i) 
 
 
@@ -239,31 +242,31 @@ let do_oper = function
 *) 
 let step = function 
 
-(* (code stack,         value/env stack, state) -> (code stack,  value/env stack, state) *) 
- | ((PUSH v) :: ds,                        evs, s) -> (ds, (V v) :: evs, s)
- | (POP :: ds,                        _ :: evs, s) -> (ds, evs, s) 
- | (SWAP :: ds,                e1 :: e2 :: evs, s) -> (ds, e2 :: e1 :: evs, s) 
- | ((BIND x) :: ds,               (V v) :: evs, s) -> (ds, EV([(x, v)]) :: evs, s) 
- | ((LOOKUP x) :: ds,                      evs, s) -> (ds, V(search(evs, x)) :: evs, s)
- | ((UNARY op) :: ds,             (V v) :: evs, s) -> (ds, V(do_unary(op, v)) :: evs, s) 
- | ((OPER op) :: ds,   (V v2) :: (V v1) :: evs, s) -> (ds, V(do_oper(op, v1, v2)) :: evs, s)
- | (MK_PAIR :: ds,     (V v2) :: (V v1) :: evs, s) -> (ds, V(PAIR(v1, v2)) :: evs, s)
- | (FST :: ds,           V(PAIR (v, _)) :: evs, s) -> (ds, (V v) :: evs, s)
- | (SND :: ds,           V(PAIR (_, v)) :: evs, s) -> (ds, (V v) :: evs, s)
- | (MK_INL :: ds,                 (V v) :: evs, s) -> (ds, V(INL v) :: evs, s)
- | (MK_INR :: ds,                 (V v) :: evs, s) -> (ds, V(INR v) :: evs, s)
- | (CASE (c1,  _) :: ds,       V(INL v) :: evs, s) -> (c1 @ ds, (V v) :: evs, s) 
- | (CASE ( _, c2) :: ds,       V(INR v) :: evs, s) -> (c2 @ ds, (V v) :: evs, s) 
- | ((TEST(c1, _)) :: ds,   V(BOOL true) :: evs, s) -> (c1 @ ds, evs, s) 
- | ((TEST(_, c2)) :: ds,  V(BOOL false) :: evs, s) -> (c2 @ ds, evs, s)
- | (ASSIGN :: ds,  (V v) :: (V (REF a)) :: evs, s) -> (ds, V(UNIT) :: evs, assign s a v)
- | (DEREF :: ds,            (V (REF a)) :: evs, s) -> (ds, V(deref s a) :: evs, s)
- | (MK_REF :: ds,                 (V v) :: evs, s) -> let (a, s') = allocate s v in (ds, V(REF a) :: evs, s')
- | ((WHILE(_, _)) :: ds,  V(BOOL false) :: evs, s) -> (ds, V(UNIT) :: evs, s) 
- | ((WHILE(c1, c2)) :: ds, V(BOOL true) :: evs, s) -> (c2 @ [POP] @ c1 @ [WHILE(c1, c2)] @ ds, evs, s)
- | ((MK_CLOSURE c) :: ds,                  evs, s) -> (ds,  V(mk_fun(c, evs_to_env evs)) :: evs, s)
- | (MK_REC(f, c) :: ds,                    evs, s) -> (ds,  V(mk_rec(f, c, evs_to_env evs)) :: evs, s)
- | (APPLY :: ds,  V(CLOSURE (c, env)) :: (V v) :: evs, s) 
+(* (code stack,         value/env stack, state) -> (code stack,  value/env stack, state) *)
+ | ((PUSH(_, v)) :: ds,                        evs, s) -> (ds, (V v) :: evs, s)
+ | ((POP _) :: ds,                        _ :: evs, s) -> (ds, evs, s)
+ | ((SWAP _):: ds,                e1 :: e2 :: evs, s) -> (ds, e2 :: e1 :: evs, s)
+ | ((BIND(_, x)) :: ds,               (V v) :: evs, s) -> (ds, EV([(x, v)]) :: evs, s)
+ | ((LOOKUP(_, x)) :: ds,                      evs, s) -> (ds, V(search(evs, x)) :: evs, s)
+ | ((UNARY(_, op)) :: ds,             (V v) :: evs, s) -> (ds, V(do_unary(op, v)) :: evs, s)
+ | ((OPER(_, op)) :: ds,   (V v2) :: (V v1) :: evs, s) -> (ds, V(do_oper(op, v1, v2)) :: evs, s)
+ | (MK_PAIR(_) :: ds,     (V v2) :: (V v1) :: evs, s) -> (ds, V(PAIR(v1, v2)) :: evs, s)
+ | (FST(_) :: ds,           V(PAIR (v, _)) :: evs, s) -> (ds, (V v) :: evs, s)
+ | (SND(_) :: ds,           V(PAIR (_, v)) :: evs, s) -> (ds, (V v) :: evs, s)
+ | (MK_INL(_) :: ds,                 (V v) :: evs, s) -> (ds, V(INL v) :: evs, s)
+ | (MK_INR(_) :: ds,                 (V v) :: evs, s) -> (ds, V(INR v) :: evs, s)
+ | (CASE (_, c1,  _) :: ds,       V(INL v) :: evs, s) -> (c1 @ ds, (V v) :: evs, s)
+ | (CASE (_, _, c2) :: ds,       V(INR v) :: evs, s) -> (c2 @ ds, (V v) :: evs, s)
+ | ((TEST(_, c1, _)) :: ds,   V(BOOL true) :: evs, s) -> (c1 @ ds, evs, s)
+ | ((TEST(_, _, c2)) :: ds,  V(BOOL false) :: evs, s) -> (c2 @ ds, evs, s)
+ | (ASSIGN(_) :: ds,  (V v) :: (V (REF a)) :: evs, s) -> (ds, V(UNIT) :: evs, assign s a v)
+ | (DEREF(_) :: ds,            (V (REF a)) :: evs, s) -> (ds, V(deref s a) :: evs, s)
+ | (MK_REF(_) :: ds,                 (V v) :: evs, s) -> let (a, s') = allocate s v in (ds, V(REF a) :: evs, s')
+ | ((WHILE(_, _, _)) :: ds,  V(BOOL false) :: evs, s) -> (ds, V(UNIT) :: evs, s)
+ | ((WHILE(l, c1, c2)) :: ds, V(BOOL true) :: evs, s) -> (c2 @ [POP l] @ c1 @ [WHILE(l, c1, c2)] @ ds, evs, s)
+ | ((MK_CLOSURE(_, c)) :: ds,                  evs, s) -> (ds,  V(mk_fun(c, evs_to_env evs)) :: evs, s)
+ | (MK_REC(_, f, c) :: ds,                    evs, s) -> (ds,  V(mk_rec(f, c, evs_to_env evs)) :: evs, s)
+ | (APPLY(_) :: ds,  V(CLOSURE (c, env)) :: (V v) :: evs, s)
                                                    -> (c @ ds, (V v) :: (EV env) :: evs, s)
  | state -> complain ("step : bad state = " ^ (string_of_interp_state state) ^ "\n")
 
@@ -279,53 +282,53 @@ let rec driver n state =
 
 (* A BIND will leave an env on stack. 
    This gets rid of it.  *) 
-let leave_scope = [SWAP; POP] 
+let leave_scope l = [SWAP l; POP l]
 
 (*
    val compile : expr -> code 
 *) 
-let rec compile = function 
- | Unit           -> [PUSH UNIT] 
- | Integer n      -> [PUSH (INT n)] 
- | Boolean b      -> [PUSH (BOOL b)] 
- | Var x          -> [LOOKUP x] 
- | UnaryOp(op, e) -> (compile e) @ [UNARY op]
- | Op(e1, op, e2) -> (compile e1) @ (compile e2) @ [OPER op] 
- | Pair(e1, e2)   -> (compile e1) @ (compile e2) @ [MK_PAIR] 
- | Fst e          -> (compile e) @ [FST] 
- | Snd e          -> (compile e) @ [SND] 
- | Inl e          -> (compile e) @ [MK_INL] 
- | Inr e          -> (compile e) @ [MK_INR] 
- | Case(e, (x1, e1), (x2, e2)) -> 
+let rec compile = function
+ | Unit l           -> [PUSH(l, UNIT)]
+ | Integer(l, n)      -> [PUSH(l, INT n)]
+ | Boolean(l, b)      -> [PUSH(l, BOOL b)]
+ | Var(l, x)          -> [LOOKUP(l, x)]
+ | UnaryOp(l, op, e) -> (compile e) @ [UNARY(l, op)]
+ | Op(l, e1, op, e2) -> (compile e1) @ (compile e2) @ [OPER(l, op)]
+ | Pair(l, e1, e2)   -> (compile e1) @ (compile e2) @ [MK_PAIR l]
+ | Fst(l, e)          -> (compile e) @ [FST l]
+ | Snd(l, e)          -> (compile e) @ [SND l]
+ | Inl(l, e)          -> (compile e) @ [MK_INL l]
+ | Inr(l, e)          -> (compile e) @ [MK_INR l]
+ | Case(l, e, (l', x1, e1), (l'', x2, e2)) ->
        (compile e)
-       @ [CASE((BIND x1) :: (compile e1) @ leave_scope, 
-               (BIND x2) :: (compile e2) @ leave_scope)]
- | If(e1, e2, e3) -> (compile e1) @ [TEST(compile e2, compile e3)]
- | Seq []         -> [] 
- | Seq [e]        -> compile e
- | Seq (e ::rest) -> (compile e) @ [POP] @ (compile (Seq rest))
- | Ref e          -> (compile e) @ [MK_REF] 
- | Deref e        -> (compile e) @ [DEREF] 
- | While(e1, e2)  -> let cl = compile e1 in cl @ [WHILE(cl, compile e2)]
- | Assign(e1, e2) -> (compile e1) @ (compile e2) @ [ASSIGN] 
- | App(e1, e2)    -> (compile e2)   (* I chose to evaluate arg first *) 
-                     @ (compile e1) 
-                     @ [APPLY; 
-                        SWAP; POP]  (* get rid of env left on stack *) 
- | Lambda(x, e)   -> [MK_CLOSURE((BIND x) :: (compile e) @ leave_scope)]
- | LetFun(f, (x, body), e)    -> 
-       (MK_CLOSURE((BIND x) :: (compile body) @ leave_scope)) :: 
-       (BIND f) :: 
-       (compile e) @ leave_scope
- | LetRecFun(f, (x, body), e) -> 
-       (MK_REC(f, (BIND x) :: (compile body) @ leave_scope)) ::  
-       (BIND f) :: 
-       (compile e) @ leave_scope
+       @ [CASE(l, (BIND(l', x1)) :: (compile e1) @ leave_scope l,
+               (BIND(l'', x2)) :: (compile e2) @ leave_scope l)]
+ | If(l, e1, e2, e3) -> (compile e1) @ [TEST(l, compile e2, compile e3)]
+ | Seq(l, [])         -> []
+ | Seq(l, [e])        -> compile e
+ (* Locations on sequence should highlight entire code blocks? *)
+ | Seq(l, (e ::rest)) -> (compile e) @ [POP l] @ (compile (Seq(l, rest)))
+ | Ref(l, e)          -> (compile e) @ [MK_REF l]
+ | Deref(l, e)        -> (compile e) @ [DEREF l]
+ | While(l, e1, e2)  -> let cl = compile e1 in cl @ [WHILE(l, cl, compile e2)]
+ | Assign(l, e1, e2) -> (compile e1) @ (compile e2) @ [ASSIGN l]
+ | App(l, e1, e2)    -> (compile e2)   (* I chose to evaluate arg first *)
+                     @ (compile e1)
+                     @ [APPLY l;
+                        SWAP l; POP l]  (* get rid of env left on stack *)
+ | Lambda(l, x, e)   -> [MK_CLOSURE(l, (BIND(l, x)) :: (compile e) @ leave_scope l)]
+ | LetFun(l, f, (l', x, body), e)    ->
+       (MK_CLOSURE(l, (BIND(l', x)) :: (compile body) @ leave_scope l)) ::
+       (BIND(l, f)) ::
+       (compile e) @ leave_scope l
+ | LetRecFun(l, f, (l', x, body), e) ->
+       (MK_REC(l, f, (BIND(l', x)) :: (compile body) @ leave_scope l)) ::
+       (BIND(l, f)) ::
+       (compile e) @ leave_scope l
 
 
 (* The initial Slang state is the Slang state : all locations contain 0 *) 
-
-let initial_state  = (Array.make Option.heap_max (INT 0), 0)
+let initial_state = (IntMap.empty, 0)
 
 let initial_env = [] 
 
@@ -336,12 +339,3 @@ let interpret e =
             then print_string("Compile code =\n" ^ (string_of_code c) ^ "\n")
             else () 
     in driver 1 (c, initial_env, initial_state)
-
-
-
-
-    
-
-      
-    
-    

@@ -1,5 +1,7 @@
 
-type address = int 
+type expr_i1 = unit Ast.expr
+
+type address = int
 
 type value = 
      | REF of address 
@@ -12,28 +14,28 @@ type value =
      | REC_CLOSURE of closure
      | CLOSURE of closure  
 
-and closure = Ast.var * Ast.expr * env 
+and closure = Ast.var * expr_i1 * env
 
 and continuation_action = 
   | UNARY of Ast.unary_oper
   | OPER of Ast.oper * value
-  | OPER_FST of Ast.expr * env * Ast.oper 
+  | OPER_FST of expr_i1 * env * Ast.oper
   | ASSIGN of value
-  | ASSIGN_FST of Ast.expr * env
-  | TAIL of Ast.expr list * env
-  | IF of Ast.expr * Ast.expr * env
-  | WHILE of Ast.expr * Ast.expr * env
-  | MKPAIR of value 
-  | PAIR_FST of Ast.expr * env 
-  | FST 
-  | SND 
-  | MKINL 
-  | MKINR 
-  | MKREF 
-  | DEREF 
-  | CASE of Ast.var * Ast.expr * Ast.var * Ast.expr * env 
-  | APPLY of value 
-  | ARG of Ast.expr * env 
+  | ASSIGN_FST of expr_i1 * env
+  | TAIL of expr_i1 list * env
+  | IF of expr_i1 * expr_i1 * env
+  | WHILE of expr_i1 * expr_i1 * env
+  | MKPAIR of value
+  | PAIR_FST of expr_i1 * env
+  | FST
+  | SND
+  | MKINL
+  | MKINR
+  | MKREF
+  | DEREF
+  | CASE of Ast.var * expr_i1 * Ast.var * expr_i1 * env
+  | APPLY of value
+  | ARG of expr_i1 * env
 
 and continuation = continuation_action  list
 
@@ -42,16 +44,14 @@ and binding = Ast.var * value
 and env = binding list
 
 type state = 
-   | EXAMINE of Ast.expr * env * continuation 
-   | COMPUTE of continuation * value 
+   | EXAMINE of expr_i1 * env * continuation
+   | COMPUTE of continuation * value
 
 val step : state -> state 
 
 val driver : int -> state -> value 
 
-val eval : Ast.expr * env -> value 
+val eval : expr_i1 * env -> value
 
-val interpret : Ast.expr -> value 
-
-val string_of_value : value -> string 
+val interpret : expr_i1 -> value
 

@@ -1,1 +1,1 @@
-val emit_x86 : Ast.expr -> unit 			    
+val emit_x86 : 'a Ast.expr -> unit

@@ -15,6 +15,8 @@ Timothy G. Griffin (tgg22@cam.ac.uk)
 
 open Ast 
 
+type expr_i1 = unit Ast.expr
+
 let complain = Errors.complain
 
 type address = int 
@@ -30,28 +32,28 @@ type value =
      | REC_CLOSURE of closure
      | CLOSURE of closure 
 
-and closure = var * expr * env 
+and closure = var * expr_i1 * env
 
-and continuation_action = 
-  | UNARY of unary_oper 
-  | OPER of oper * value 
-  | OPER_FST of Ast.expr * env * Ast.oper 
+and continuation_action =
+  | UNARY of unary_oper
+  | OPER of oper * value
+  | OPER_FST of expr_i1 * env * oper
   | ASSIGN of value
-  | ASSIGN_FST of Ast.expr * env
-  | TAIL of Ast.expr list * env
-  | IF of expr * expr * env 
-  | WHILE of Ast.expr * Ast.expr * env
-  | MKPAIR of value 
-  | PAIR_FST of expr * env 
+  | ASSIGN_FST of expr_i1 * env
+  | TAIL of expr_i1 list * env
+  | IF of expr_i1 * expr_i1 * env
+  | WHILE of expr_i1 * expr_i1 * env
+  | MKPAIR of value
+  | PAIR_FST of expr_i1 * env
   | FST
   | SND
   | MKINL
   | MKINR
-  | MKREF 
-  | DEREF 
-  | CASE of var * expr * var * expr * env 
-  | APPLY of value 
-  | ARG of expr * env 
+  | MKREF
+  | DEREF
+  | CASE of var * expr_i1 * var * expr_i1 * env
+  | APPLY of value
+  | ARG of expr_i1 * env
 
 and continuation = continuation_action  list
 
@@ -59,9 +61,9 @@ and binding = var * value
 
 and env = binding list
 
-type state = 
-   | EXAMINE of expr * env * continuation 
-   | COMPUTE of continuation * value 
+type state =
+   | EXAMINE of expr_i1 * env * continuation
+   | COMPUTE of continuation * value
 
 
 
@@ -210,34 +212,34 @@ let mk_ref v = let a = new_address () in let _ = heap.(a) <- v in REF a
 
 let do_assign a v = (heap.(a) <- v)
 
- 
-let step = function 
- (* EXAMINE --> EXAMINE *) 
- | EXAMINE(UnaryOp(op, e),              env, k) -> EXAMINE(e,  env, (UNARY op) :: k)
- | EXAMINE(Op(e1, op, e2),              env, k) -> EXAMINE(e1, env, OPER_FST(e2, env, op) :: k)
- | EXAMINE(If(e1, e2, e3),              env, k) -> EXAMINE(e1, env, IF(e2, e3, env) :: k)
- | EXAMINE(Pair(e1, e2),                env, k) -> EXAMINE(e1, env, PAIR_FST(e2, env) :: k)
- | EXAMINE(Fst e,                       env, k) -> EXAMINE(e,  env, FST :: k)
- | EXAMINE(Snd e,                       env, k) -> EXAMINE(e,  env, SND :: k) 
- | EXAMINE(Inl e,                       env, k) -> EXAMINE(e,  env, MKINL :: k) 
- | EXAMINE(Inr e,                       env, k) -> EXAMINE(e,  env, MKINR :: k) 
- | EXAMINE(Case(e, (x1, e1), (x2, e2)), env, k) -> EXAMINE(e,  env, CASE(x1, e1, x2, e2, env) :: k)
- | EXAMINE(App(e1, e2),                 env, k) -> EXAMINE(e2, env, ARG(e1, env) :: k)
- | EXAMINE(LetFun(f, (x, body), e),     env, k) -> EXAMINE(e, update(env, (f, mk_fun(x, body, env))) , k) 
- | EXAMINE(LetRecFun(f, (x, body), e),  env, k) -> EXAMINE(e, update(env, (f, mk_rec_fun(f, x, body, env))) , k) 
- | EXAMINE(Ref e,                       env, k) -> EXAMINE(e,  env, MKREF :: k)
- | EXAMINE(Deref e,                     env, k) -> EXAMINE(e,  env, DEREF :: k)
- | EXAMINE(Assign(e1, e2),              env, k) -> EXAMINE(e1, env, ASSIGN_FST(e2, env) :: k)
- | EXAMINE(Seq [e],                     env, k) -> EXAMINE(e, env, k) 
- | EXAMINE(Seq (e :: rest),             env, k) -> EXAMINE(e, env, TAIL (rest, env) :: k) 
- | EXAMINE(While(e1, e2),               env, k) -> EXAMINE(e1, env, WHILE(e1, e2, env) :: k)
- (* EXAMINE --> COMPUTE *) 
- | EXAMINE(Unit,              _, k) -> COMPUTE(k, UNIT) 
- | EXAMINE(Var x,           env, k) -> COMPUTE(k, lookup (env, x))
- | EXAMINE(Integer n,         _, k) -> COMPUTE(k, INT n)
- | EXAMINE(Boolean b,         _, k) -> COMPUTE(k, BOOL b) 
- | EXAMINE(Lambda(x, body), env, k) -> COMPUTE(k, mk_fun(x, body, env))
- (* COMPUTE --> COMPUTE *) 
+
+let step = function
+ (* EXAMINE --> EXAMINE *)
+ | EXAMINE(UnaryOp(_, op, e),              env, k) -> EXAMINE(e,  env, (UNARY op) :: k)
+ | EXAMINE(Op(_, e1, op, e2),              env, k) -> EXAMINE(e1, env, OPER_FST(e2, env, op) :: k)
+ | EXAMINE(If(_, e1, e2, e3),              env, k) -> EXAMINE(e1, env, IF(e2, e3, env) :: k)
+ | EXAMINE(Pair(_, e1, e2),                env, k) -> EXAMINE(e1, env, PAIR_FST(e2, env) :: k)
+ | EXAMINE(Fst(_, e),                       env, k) -> EXAMINE(e,  env, FST :: k)
+ | EXAMINE(Snd(_, e),                       env, k) -> EXAMINE(e,  env, SND :: k)
+ | EXAMINE(Inl(_, e),                       env, k) -> EXAMINE(e,  env, MKINL :: k)
+ | EXAMINE(Inr(_, e),                       env, k) -> EXAMINE(e,  env, MKINR :: k)
+ | EXAMINE(Case(_, e, (_, x1, e1), (_, x2, e2)), env, k) -> EXAMINE(e,  env, CASE(x1, e1, x2, e2, env) :: k)
+ | EXAMINE(App(_, e1, e2),                 env, k) -> EXAMINE(e2, env, ARG(e1, env) :: k)
+ | EXAMINE(LetFun(_, f, (_, x, body), e),     env, k) -> EXAMINE(e, update(env, (f, mk_fun(x, body, env))) , k)
+ | EXAMINE(LetRecFun(_, f, (_, x, body), e),  env, k) -> EXAMINE(e, update(env, (f, mk_rec_fun(f, x, body, env))) , k)
+ | EXAMINE(Ref(_, e),                       env, k) -> EXAMINE(e,  env, MKREF :: k)
+ | EXAMINE(Deref(_, e),                     env, k) -> EXAMINE(e,  env, DEREF :: k)
+ | EXAMINE(Assign(_, e1, e2),              env, k) -> EXAMINE(e1, env, ASSIGN_FST(e2, env) :: k)
+ | EXAMINE(Seq(_, [e]),                     env, k) -> EXAMINE(e, env, k)
+ | EXAMINE(Seq(_, (e :: rest)),             env, k) -> EXAMINE(e, env, TAIL (rest, env) :: k)
+ | EXAMINE(While(_, e1, e2),               env, k) -> EXAMINE(e1, env, WHILE(e1, e2, env) :: k)
+ (* EXAMINE --> COMPUTE *)
+ | EXAMINE(Unit _,              _, k) -> COMPUTE(k, UNIT)
+ | EXAMINE(Var(_, x),           env, k) -> COMPUTE(k, lookup (env, x))
+ | EXAMINE(Integer(_, n),         _, k) -> COMPUTE(k, INT n)
+ | EXAMINE(Boolean(_, b),         _, k) -> COMPUTE(k, BOOL b)
+ | EXAMINE(Lambda(_, x, body), env, k) -> COMPUTE(k, mk_fun(x, body, env))
+ (* COMPUTE --> COMPUTE *)
  | COMPUTE((UNARY op) :: k,    v) -> COMPUTE(k ,(do_unary(op, v)))
  | COMPUTE(OPER(op, v1) :: k, v2) -> COMPUTE(k, do_oper(op, v1, v2))
  | COMPUTE((MKPAIR v1) :: k,  v2) -> COMPUTE(k, PAIR(v1, v2))
@@ -261,8 +263,8 @@ let step = function
  | COMPUTE(IF (_, e3, env) :: k,       BOOL false)  -> EXAMINE(e3, env, k)
 
  | COMPUTE(ASSIGN_FST (e2, env) :: k,            v)  -> EXAMINE(e2, env, ASSIGN v :: k)
- | COMPUTE(WHILE (e1, e2, env) :: k,     BOOL true)  -> EXAMINE(Seq [e2; e1], env, WHILE(e1, e2, env)::k)
- | COMPUTE((TAIL (el, env)) :: k,     _)  ->  EXAMINE(Seq el, env, k)
+ | COMPUTE(WHILE (e1, e2, env) :: k,     BOOL true)  -> EXAMINE(Seq((), [e2; e1]), env, WHILE(e1, e2, env)::k)
+ | COMPUTE((TAIL (el, env)) :: k,     _)  ->  EXAMINE(Seq((), el), env, k)
  | state -> complain ("step : malformed state = " ^ (string_of_state state) ^ "\n")
 
 let rec driver n state = 
@@ -273,16 +275,10 @@ let rec driver n state =
      | COMPUTE([], v) -> v 
      | _              -> driver (n + 1) (step state) 
 
-let eval(e, env) = driver 1 (EXAMINE(e, env, []))
+let eval(e, env) = driver 1 (EXAMINE(Ast.map (fun _ -> ()) e, env, []))
 
 (* env_empty : env *) 
 let env_empty = [] 
 
-(* interpret : expr -> value *) 
+(* interpret : expr_i1 -> value *)
 let interpret e = eval(e, env_empty)
-
-    
-
-      
-    
-    

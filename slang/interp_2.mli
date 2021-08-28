@@ -1,77 +1,78 @@
+(* Using IntMap to represent memory *)
+module IntMap : Map.S with type key = int
 
 type address = int 
 
 type var = string [@@deriving yojson]
 
-type value = 
+type 'a value =
      | REF of address 
      | INT of int 
      | BOOL of bool 
      | UNIT
-     | PAIR of value * value 
-     | INL of value 
-     | INR of value 
-     | CLOSURE of closure    
-     | REC_CLOSURE of code [@@deriving yojson]
+     | PAIR of 'a value * 'a value
+     | INL of 'a value
+     | INR of 'a value
+     | CLOSURE of 'a closure
+     | REC_CLOSURE of 'a code [@@deriving yojson]
 
-and closure = code * env 
+and 'a closure = 'a code * 'a env
 
 
-and instruction = 
-  | PUSH of value 
-  | LOOKUP of var 
-  | UNARY of Ast.unary_oper 
-  | OPER of Ast.oper 
-  | ASSIGN 
-  | SWAP
-  | POP 
-  | BIND of var 
-  | FST
-  | SND
-  | DEREF 
-  | APPLY
-  | MK_PAIR 
-  | MK_INL
-  | MK_INR
-  | MK_REF 
-  | MK_CLOSURE of code 
-  | MK_REC of var * code 
-  | TEST of code * code
-  | CASE of code * code
-  | WHILE of code * code
+and 'a instruction =
+  | PUSH of 'a * 'a value
+  | LOOKUP of 'a * var
+  | UNARY of 'a * Ast.unary_oper
+  | OPER of 'a * Ast.oper
+  | ASSIGN of 'a
+  | SWAP of 'a
+  | POP of 'a
+  | BIND of 'a * var
+  | FST of 'a
+  | SND of 'a
+  | DEREF of 'a
+  | APPLY of 'a
+  | MK_PAIR of 'a
+  | MK_INL of 'a
+  | MK_INR of 'a
+  | MK_REF of 'a
+  | MK_CLOSURE of 'a * 'a code
+  | MK_REC of 'a * var * 'a code
+  | TEST of 'a * 'a code * 'a code
+  | CASE of 'a * 'a code * 'a code
+  | WHILE of 'a * 'a code * 'a code
 
-and code = instruction list 
+and 'a code = 'a instruction list
 
-and binding = Ast.var * value
+and 'a binding = Ast.var * 'a value
 
-and env = binding list
+and 'a env = 'a binding list
 
-type env_or_value = EV of env | V of value 
+type 'a env_or_value = EV of 'a env | V of 'a value
 
-type env_value_stack = env_or_value list [@@deriving yojson]
+type 'a env_value_stack = 'a env_or_value list [@@deriving yojson]
 
-(* array of referenced values together with next unallocated address *) 
-type state = (value array) * int 
+(* array of referenced values together with next unallocated address *)
+type 'a state = ('a value IntMap.t) * int
 
-type interp_state = code * env_value_stack * state [@@deriving yojson]
+type 'a interp_state = 'a code * 'a env_value_stack * 'a state [@@deriving yojson]
 
-val initial_state : state
+val initial_state : 'a state
 
-val initial_env : env_value_stack
+val initial_env : 'a env_value_stack
 
-val step : interp_state -> interp_state 
+val step :  'a interp_state -> 'a interp_state
 
-val compile : Ast.expr -> code 
+val compile : 'a Ast.expr -> 'a code
 
-val driver : int -> interp_state -> value * state
+val driver : int -> 'a interp_state -> 'a value * 'a state
 
-val interpret : Ast.expr -> value * state 
+val interpret : 'a Ast.expr -> 'a value * 'a state
 
-val string_of_instruction : instruction -> string
+val string_of_instruction : 'a instruction -> string
 
-val string_of_value : value -> string 
+val string_of_value : 'a value -> string
 
-val string_of_env_or_value : env_or_value -> string
+val string_of_env_or_value : 'a env_or_value -> string
 
-val string_of_code : code -> string 
-
+val string_of_code : 'a code -> string

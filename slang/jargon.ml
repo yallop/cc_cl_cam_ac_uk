@@ -42,36 +42,36 @@ type heap_item =
   | HEAP_HEADER of int * heap_type (* int is number of items to follow *)       
 
 
-type value_path = 
-  | STACK_LOCATION of offset 
-  | HEAP_LOCATION of offset 
+type value_path =
+  | STACK_LOCATION of offset
+  | HEAP_LOCATION of offset
 
-type instruction = 
-  | PUSH of stack_item    (* modified *) 
-  | LOOKUP of value_path  (* modified *) 
-  | UNARY of unary_oper 
-  | OPER of oper 
-  | ASSIGN 
-  | SWAP
-  | POP 
-(*  | BIND of var            not needed *) 
-  | FST
-  | SND
-  | DEREF 
-  | APPLY
-  | RETURN 
-  | MK_PAIR 
-  | MK_INL
-  | MK_INR
-  | MK_REF 
-  | MK_CLOSURE of location * int (* modified *) 
-  | TEST of location 
-  | CASE of location
-  | GOTO of location
-  | LABEL of label 
-  | HALT 
+type 'a instruction =
+  | PUSH of 'a * stack_item    (* modified *)
+  | LOOKUP of 'a * value_path  (* modified *)
+  | UNARY of 'a * unary_oper
+  | OPER of 'a * oper
+  | ASSIGN of 'a
+  | SWAP of 'a
+  | POP of 'a
+(*  | BIND of var            not needed *)
+  | FST of 'a
+  | SND of 'a
+  | DEREF of 'a
+  | APPLY of 'a
+  | RETURN of 'a
+  | MK_PAIR of 'a
+  | MK_INL of 'a
+  | MK_INR of 'a
+  | MK_REF of 'a
+  | MK_CLOSURE of 'a * location * int (* modified *)
+  | TEST of 'a * location
+  | CASE of 'a * location
+  | GOTO of 'a * location
+  | LABEL of 'a * label
+  | HALT of 'a
 
-type listing = instruction list 
+type 'a listing = 'a instruction list
 
 type vm_state = 
   {
@@ -80,7 +80,7 @@ type vm_state =
     heap_bound  : code_index; 
     stack       : stack_item array; 
     heap        : heap_item array; 
-    code        : instruction array; 
+    code        : unit instruction array;
     mutable sp : stack_index;  (* stack pointer *) 
     mutable fp : stack_index;  (* frame pointer *) 
     mutable cp : code_index;   (* code pointer  *) 
@@ -143,34 +143,34 @@ let string_of_location = function
   | (l, None) -> l 
   | (l, Some i) -> l ^ " = " ^ (string_of_int i) 
 
-let string_of_instruction = function 
- | UNARY op -> "UNARY " ^ (string_of_uop op) 
- | OPER op  -> "OPER " ^ (string_of_bop op) 
- | MK_PAIR  -> "MK_PAIR"
- | FST      -> "FST"
- | SND      -> "SND"
- | MK_INL   -> "MK_INL"
- | MK_INR   -> "MK_INR"
- | MK_REF   -> "MK_REF"
- | PUSH v   -> "PUSH " ^ (string_of_stack_item v) 
- | LOOKUP p -> "LOOKUP " ^ (string_of_value_path p) 
- | TEST l   -> "TEST " ^ (string_of_location l)
- | CASE l   -> "CASE " ^ (string_of_location l)
- | GOTO l   -> "GOTO " ^ (string_of_location l)
- | APPLY    -> "APPLY"
- | RETURN   -> "RETURN"
- | HALT     -> "HALT"
- | LABEL l  -> "LABEL " ^ l 
- | SWAP     -> "SWAP"
- | POP      -> "POP"
- | DEREF    -> "DEREF"
- | ASSIGN   -> "ASSIGN"
- | MK_CLOSURE (loc, n)  
+let string_of_instruction = function
+ | UNARY(_, op) -> "UNARY " ^ (string_of_uop op)
+ | OPER(_, op)  -> "OPER " ^ (string_of_bop op)
+ | MK_PAIR _ -> "MK_PAIR"
+ | FST _      -> "FST"
+ | SND _      -> "SND"
+ | MK_INL _   -> "MK_INL"
+ | MK_INR _   -> "MK_INR"
+ | MK_REF _   -> "MK_REF"
+ | PUSH(_, v)   -> "PUSH " ^ (string_of_stack_item v)
+ | LOOKUP(_, p) -> "LOOKUP " ^ (string_of_value_path p)
+ | TEST(_, l)   -> "TEST " ^ (string_of_location l)
+ | CASE(_, l)   -> "CASE " ^ (string_of_location l)
+ | GOTO(_, l)   -> "GOTO " ^ (string_of_location l)
+ | APPLY _    -> "APPLY"
+ | RETURN _   -> "RETURN"
+ | HALT _     -> "HALT"
+ | LABEL(_, l)  -> "LABEL " ^ l
+ | SWAP _     -> "SWAP"
+ | POP _      -> "POP"
+ | DEREF _    -> "DEREF"
+ | ASSIGN _   -> "ASSIGN"
+ | MK_CLOSURE (_, loc, n)
              -> "MK_CLOSURE(" ^ (string_of_location loc) 
 	                      ^ ", " ^ (string_of_int n) ^ ")"
 let rec string_of_listing = function 
   | [] -> "\n"  
-  | (LABEL l) :: rest -> ("\n" ^ l ^ " :") ^ (string_of_listing rest) 
+  | (LABEL(_, l)) :: rest -> ("\n" ^ l ^ " :") ^ (string_of_listing rest)
   | i :: rest -> "\n\t" ^ (string_of_instruction i) ^ (string_of_listing rest) 
 
 let string_of_installed_code (code, size)  = 
@@ -474,32 +474,32 @@ let apply vm =
     | _ -> Errors.complain "apply: runtime error, expecting heap index on top of stack" 
 
 
-let step vm = 
- match get_instruction vm with 
-  | UNARY op          -> advance_cp (perform_unary(op, vm)) 
-  | OPER op           -> advance_cp (perform_op(op, vm)) 
-  | MK_PAIR           -> advance_cp (mk_pair vm)
-  | FST               -> advance_cp (do_fst vm)
-  | SND               -> advance_cp (do_snd vm)
-  | MK_INL            -> advance_cp (mk_inl vm)
-  | MK_INR            -> advance_cp (mk_inr vm)
-  | PUSH c            -> advance_cp (push(c, vm))
+let step vm =
+ match get_instruction vm with
+  | UNARY(_, op)          -> advance_cp (perform_unary(op, vm))
+  | OPER(_, op)           -> advance_cp (perform_op(op, vm))
+  | MK_PAIR _           -> advance_cp (mk_pair vm)
+  | FST _              -> advance_cp (do_fst vm)
+  | SND _              -> advance_cp (do_snd vm)
+  | MK_INL _            -> advance_cp (mk_inl vm)
+  | MK_INR _           -> advance_cp (mk_inr vm)
+  | PUSH(_, c)            -> advance_cp (push(c, vm))
 
-  | APPLY             -> apply vm
-  | LOOKUP vp         -> advance_cp (lookup vm.fp vm vp)
-  | RETURN            -> return vm
-  | MK_CLOSURE(l, n)  -> advance_cp (mk_closure(l, n, vm))
+  | APPLY _             -> apply vm
+  | LOOKUP(_, vp)         -> advance_cp (lookup vm.fp vm vp)
+  | RETURN _            -> return vm
+  | MK_CLOSURE(_, l, n)  -> advance_cp (mk_closure(l, n, vm))
 
-  | SWAP              -> advance_cp (swap vm)
-  | POP               -> advance_cp (pop (1, vm))
-  | LABEL _           -> advance_cp vm 
-  | DEREF             -> advance_cp (deref vm)
-  | MK_REF            -> advance_cp (mk_ref vm)
-  | ASSIGN            -> advance_cp(assign vm)
-  | HALT              -> { vm with status = Halted }
-  | GOTO (_, Some i)  -> goto(i, vm)
-  | TEST (_, Some i)  -> test(i, vm)
-  | CASE (_, Some i)  -> case(i, vm)
+  | SWAP _              -> advance_cp (swap vm)
+  | POP _               -> advance_cp (pop (1, vm))
+  | LABEL(_, _)           -> advance_cp vm
+  | DEREF _             -> advance_cp (deref vm)
+  | MK_REF _           -> advance_cp (mk_ref vm)
+  | ASSIGN _          -> advance_cp(assign vm)
+  | HALT _              -> { vm with status = Halted }
+  | GOTO (_, (_, Some i))  -> goto(i, vm)
+  | TEST (_, (_, Some i))  -> test(i, vm)
+  | CASE (_, (_, Some i))  -> case(i, vm)
 
   | _ -> Errors.complain ("step : bad state = " ^ (string_of_state vm) ^ "\n")
 
@@ -514,10 +514,10 @@ let rec driver n vm =
     in if vm.status = Running then driver (n+1) (step vm) else vm 
 
 let map_instruction_labels f = function 
-     | GOTO (lab, _) -> GOTO(lab, Some(f lab))
-     | TEST (lab, _) -> TEST(lab, Some(f lab))
-     | CASE (lab, _) -> CASE(lab, Some(f lab))
-     | MK_CLOSURE ((lab, _), n) -> MK_CLOSURE((lab, Some(f lab)), n)
+     | GOTO(l, (lab, _)) -> GOTO(l, (lab, Some(f lab)))
+     | TEST (l, (lab, _)) -> TEST(l, (lab, Some(f lab)))
+     | CASE (l, (lab, _)) -> CASE(l, (lab, Some(f lab)))
+     | MK_CLOSURE (l, ((lab, _)), n) -> MK_CLOSURE((l, (lab, Some(f lab)), n))
      | inst -> inst 
 
 let rec find l y = 
@@ -532,7 +532,7 @@ let load instr_list =
    let mk_label_to_address l = 
        let rec aux carry k = function 
          | [] -> carry 
-         | (LABEL lab) :: rest -> aux ((lab, k) :: carry) (k +1) rest 
+         | ((LABEL (_, lab)) :: rest) -> aux ((lab, k) :: carry) (k +1) rest
          | _ :: rest           -> aux carry (k+1) rest 
        in aux [] 0 l 
     in let label_to_address = mk_label_to_address instr_list 
@@ -617,103 +617,107 @@ let positions l =
     in aux 1 l 
 
 
-let rec comp vmap = function 
-  | Unit           -> ([], [PUSH STACK_UNIT]) 
-  | Boolean b      -> ([], [PUSH (STACK_BOOL b)])
-  | Integer n      -> ([], [PUSH (STACK_INT n)]) 
-  | UnaryOp(op, e) -> let (defs, c) = comp vmap e in  (defs, c @ [UNARY op])
-  | Op(e1, op, e2) -> let (defs1, c1) = comp vmap e1 in  
-                      let (defs2, c2) = comp vmap e2 in  
-                          (defs1 @ defs2, c1 @ c2 @ [OPER op])
-  | Pair(e1, e2)   -> let (defs1, c1) = comp vmap e1 in  
-                      let (defs2, c2) = comp vmap e2 in  
-                          (defs1 @ defs2, c1 @ c2 @ [MK_PAIR]) 
-  | Fst e          -> let (defs, c) = comp vmap e in (defs, c @ [FST])
-  | Snd e          -> let (defs, c) = comp vmap e in (defs, c @ [SND])
-  | Inl e          -> let (defs, c) = comp vmap e in (defs, c @ [MK_INL])
-  | Inr e          -> let (defs, c) = comp vmap e in (defs, c @ [MK_INR])
-  | Case(e1, (x1, e2), (x2, e3)) -> 
-                      let inr_label = new_label () in 
-                      let after_inr_label = new_label () in 
-                      let (defs1, c1) = comp vmap e1 in  
-                      let (defs2, c2) = comp vmap (Lambda(x1, e2)) in  
-                      let (defs3, c3) = comp vmap (Lambda(x2, e3)) in  
-                         (defs1 @ defs2 @ defs3, 
-                          (c1 
-   		           @ [CASE(inr_label, None)] 
-                           @ c2 
-		           @ [APPLY; GOTO (after_inr_label, None); 
-                              LABEL inr_label] 
-                           @ c3 
-		           @ [APPLY; LABEL after_inr_label]))
-  | If(e1, e2, e3) -> let else_label = new_label () in 
-                      let after_else_label = new_label () in 
-                      let (defs1, c1) = comp vmap e1 in  
-                      let (defs2, c2) = comp vmap e2 in  
-                      let (defs3, c3) = comp vmap e3 in  
-                         (defs1 @ defs2 @ defs3, 
-                          (c1 
-   		           @ [TEST(else_label, None)] 
-                           @ c2 
-		           @ [GOTO (after_else_label, None); LABEL else_label] 
-                           @ c3 
-		           @ [LABEL after_else_label]))   
- | Seq []         -> ([], [])  
- | Seq [e]        -> comp vmap e
- | Seq (e ::rest) -> let (defs1, c1) = comp vmap e in  
-                     let (defs2, c2) = comp vmap (Seq rest) in  
-                       (defs1 @ defs2, c1 @ [POP] @ c2)
- | Ref e          -> let (defs, c) = comp vmap e in (defs, c @ [MK_REF])
- | Deref e        -> let (defs, c) = comp vmap e in (defs, c @ [DEREF])
- | While(e1, e2)  -> let test_label = new_label () in 
-                      let end_label = new_label () in 
-                      let (defs1, c1) = comp vmap e1 in  
-                      let (defs2, c2) = comp vmap e2 in  
-                         (defs1 @ defs2, 
-                          [LABEL test_label]
-                           @ c1 
-                           @ [TEST(end_label, None)] 
-                           @ c2 
-                           @ [POP; GOTO (test_label, None); LABEL end_label; PUSH STACK_UNIT])
- | Assign(e1, e2) -> let (defs1, c1) = comp vmap e1 in  
-                     let (defs2, c2) = comp vmap e2 in 
-                         (defs1 @ defs2, c1 @ c2 @ [ASSIGN])
+let rec comp vmap = function
+  | Unit l           -> ([], [PUSH(l, STACK_UNIT)])
+  | Boolean(l, b)      -> ([], [PUSH (l, STACK_BOOL b)])
+  | Integer(l, n)      -> ([], [PUSH (l, STACK_INT n)])
+  | UnaryOp(l, op, e) -> let (defs, c) = comp vmap e in  (defs, c @ [UNARY(l, op)])
+  | Op(l, e1, op, e2) -> let (defs1, c1) = comp vmap e1 in
+                      let (defs2, c2) = comp vmap e2 in
+                          (defs1 @ defs2, c1 @ c2 @ [OPER(l, op)])
+  | Pair(l, e1, e2)   -> let (defs1, c1) = comp vmap e1 in
+                      let (defs2, c2) = comp vmap e2 in
+                          (defs1 @ defs2, c1 @ c2 @ [MK_PAIR l])
+  | Fst(l, e)          -> let (defs, c) = comp vmap e in (defs, c @ [FST l])
+  | Snd(l, e)          -> let (defs, c) = comp vmap e in (defs, c @ [SND l])
+  | Inl(l, e)          -> let (defs, c) = comp vmap e in (defs, c @ [MK_INL l])
+  | Inr(l, e)          -> let (defs, c) = comp vmap e in (defs, c @ [MK_INR l])
+  | Case(l, e1, (l', x1, e2), (l'', x2, e3)) ->
+                      let inr_label = new_label () in
+                      let after_inr_label = new_label () in
+                      let (defs1, c1) = comp vmap e1 in
+                      let (defs2, c2) = comp vmap (Lambda(l', x1, e2)) in
+                      let (defs3, c3) = comp vmap (Lambda(l'', x2, e3)) in
+                         (defs1 @ defs2 @ defs3,
+                          (c1
+   		           @ [CASE(l, (inr_label, None))]
+                           @ c2
+		           @ [APPLY l'; GOTO (l', (after_inr_label, None));
+                              LABEL (l', inr_label)]
+                           @ c3
+		           @ [APPLY l''; LABEL(l'', after_inr_label)]))
+  | If(l, e1, e2, e3) -> let else_label = new_label () in
+                      let after_else_label = new_label () in
+                      let (defs1, c1) = comp vmap e1 in
+                      let (defs2, c2) = comp vmap e2 in
+                      let (defs3, c3) = comp vmap e3 in
+                         (defs1 @ defs2 @ defs3,
+                          (c1
+   		           @ [TEST(l, (else_label, None))]
+                           @ c2
+		           @ [GOTO (l, (after_else_label, None)); LABEL(l, else_label)]
+                           @ c3
+		           @ [LABEL(l, after_else_label)]))
+ | Seq (_, [])         -> ([], [])
+ | Seq (_, [e])        -> comp vmap e
+ | Seq (l, (e ::rest)) -> let (defs1, c1) = comp vmap e in
+                     let (defs2, c2) = comp vmap (Seq(l, rest)) in
+                       (defs1 @ defs2, c1 @ [POP l] @ c2)
+ | Ref (l, e)          -> let (defs, c) = comp vmap e in (defs, c @ [MK_REF l])
+ | Deref (l, e)        -> let (defs, c) = comp vmap e in (defs, c @ [DEREF l])
+ | While(l, e1, e2)  -> let test_label = new_label () in
+                      let end_label = new_label () in
+                      let (defs1, c1) = comp vmap e1 in
+                      let (defs2, c2) = comp vmap e2 in
+                         (defs1 @ defs2,
+                          [LABEL(l, test_label)]
+                           @ c1
+                           @ [TEST(l, (end_label, None))]
+                           @ c2
+                           @ [POP l; GOTO(l, (test_label, None)); LABEL(l, end_label); PUSH(l, STACK_UNIT)])
+ | Assign(l, e1, e2) -> let (defs1, c1) = comp vmap e1 in
+                     let (defs2, c2) = comp vmap e2 in
+                         (defs1 @ defs2, c1 @ c2 @ [ASSIGN l])
 
- | App(e1, e2)    -> let (defs1, c1) = comp vmap e1 in   
-                     let (defs2, c2) = comp vmap e2 in  
-                          (defs1 @ defs2, c2 @ c1 @ [APPLY]) 
- | Var x           -> ([], [LOOKUP(find vmap x)])
- | LetFun(f, (x, e1), e2) -> comp vmap (App(Lambda(f, e2), Lambda(x, e1)))
- | Lambda(x, e)           -> comp_lambda vmap (None, x, e)
- | LetRecFun(f, (x, e1), e2) -> 
-                      let (defs1, c1) = comp vmap (Lambda(f, e2)) in  
-                      let (defs2, c2) = comp_lambda vmap (Some f, x, e1) in
-                          (defs1 @ defs2, c2 @ c1 @ [APPLY]) 
+ | App(l, e1, e2)    -> let (defs1, c1) = comp vmap e1 in
+                     let (defs2, c2) = comp vmap e2 in
+                          (defs1 @ defs2, c2 @ c1 @ [APPLY l])
+ | Var(l, x)           -> ([], [LOOKUP(l, find vmap x)])
+ | LetFun(l, f, (l', x, e1), e2) -> comp vmap (App(l, Lambda(l, f, e2), Lambda(l', x, e1)))
+ | Lambda(l, x, e)           -> comp_lambda vmap (l, None, x, e)
+ | LetRecFun(l, f, (l', x, e1), e2) ->
+                      let (defs1, c1) = comp vmap (Lambda(l, f, e2)) in
+                      let (defs2, c2) = comp_lambda vmap (l', Some f, x, e1) in
+                          (defs1 @ defs2, c2 @ c1 @ [APPLY l])
 
-and comp_lambda vmap (f_opt, x, e) = 
-    let bound_vars = match f_opt with | None -> [x]          | Some f -> [x; f] in 
+and comp_lambda vmap (l, f_opt, x, e) =
+    let bound_vars = match f_opt with | None -> [x]          | Some f -> [x; f] in
     let f = new_label () in
-    let f_bind =     match f_opt with | None -> []           | Some f -> [(f, STACK_LOCATION (-1))]  in 
-    let x_bind = (x, STACK_LOCATION (-2)) in 
-    let fvars = Free_vars.free_vars (bound_vars, e)   in 
-    let fetch_fvars = List.map (fun y -> LOOKUP(find vmap y)) fvars in 
-    let fvar_bind (y, p) = (y, HEAP_LOCATION p) in 
-    let env_bind = List.map fvar_bind (positions fvars) in 
-    let new_vmap = x_bind :: (f_bind @ env_bind @ vmap) in 
-    let (defs, c) = comp new_vmap e in  
-    let def = [LABEL f] @ c @ [RETURN] in 
-     (def @ defs, (List.rev fetch_fvars) @ [MK_CLOSURE((f, None), List.length fvars)])
+    let f_bind =     match f_opt with | None -> []           | Some f -> [(f, STACK_LOCATION (-1))]  in
+    let x_bind = (x, STACK_LOCATION (-2)) in
+    let fvars = Free_vars.free_vars (bound_vars, e)   in
+    let fetch_fvars = List.map (fun y -> LOOKUP(l, find vmap y)) fvars in
+    let fvar_bind (y, p) = (y, HEAP_LOCATION p) in
+    let env_bind = List.map fvar_bind (positions fvars) in
+    let new_vmap = x_bind :: (f_bind @ env_bind @ vmap) in
+    let (defs, c) = comp new_vmap e in
+    let def = [LABEL(l, f)] @ c @ [RETURN l] in
+     (def @ defs, (List.rev fetch_fvars) @ [MK_CLOSURE(l, (f, None), List.length fvars)])
 
 let compile e = 
     let (defs, c) = comp [] e in 
+    let l = Ast.get_tag e in
     let result = c          (* body of program *) 
-                 @ [HALT]   (* stop the interpreter *) 
+                 @ [HALT l]   (* stop the interpreter *) 
                  @ defs in  (* the function definitions *) 
     let _ = if Option.verbose 
             then print_string ("\nCompiled Code = \n" ^ (string_of_listing result))
             else () 
     in result 
 
-let interpret e = run (compile e)
+let interpret e =
+    (* Remove annotation from AST *)
+    let e' = Ast.map (fun _ -> ()) e in
+    run (compile e')
 
 let reset = fun _ -> label_ref := 0

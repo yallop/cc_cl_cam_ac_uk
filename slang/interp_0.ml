@@ -99,70 +99,70 @@ let do_assign a = function
 (*
     interpret : (expr * env * store) -> (value * store) 
               : (expr * (var -> value) * address -> value) -> value
-*) 
-let rec interpret (e, env, store) = 
-    match e with 
-    | Unit             -> (UNIT, store) 
-    | Var x            -> (env x, store) 
-    | Integer n        -> (INT n, store) 
-    | Boolean b        -> (BOOL b, store) 
+*)
+let rec interpret (e, env, store) =
+    match e with
+    | Unit _             -> (UNIT, store)
+    | Var(_, x)            -> (env x, store)
+    | Integer(_, n)        -> (INT n, store)
+    | Boolean( _, b)        -> (BOOL b, store)
 
-    | Seq []           -> (UNIT, store) (* should not be seen ... *) 
-    | Seq [e]          -> interpret (e, env, store)
-    | Seq (e :: rest)  -> let (_,  store1) = interpret(e, env, store) 
-                          in interpret(Seq rest, env, store1) 
-    | While(e1, e2)   -> let (v, store') = interpret(e1, env, store) in 
-                          (match v with 
-                          | BOOL true -> interpret(Seq [e2; e], env, store') 
+    | Seq(_, [])           -> (UNIT, store) (* should not be seen ... *)
+    | Seq(_, [e])          -> interpret (e, env, store)
+    | Seq(l, (e :: rest))  -> let (_,  store1) = interpret(e, env, store)
+                          in interpret(Seq(l, rest), env, store1)
+    | While(l, e1, e2)   -> let (v, store') = interpret(e1, env, store) in
+                          (match v with
+                          | BOOL true -> interpret(Seq(l, [e2; e]), env, store')
                           | BOOL false -> (UNIT, store')
                           | _ -> complain "runtime error.  Expecting a boolean!"
                           )
-    | Ref e            -> do_ref(interpret(e, env, store))
-    | Deref e          -> do_deref(interpret(e, env, store))
-    | Assign(e1, e2)   -> (match interpret(e1, env, store) with 
+    | Ref(_, e)            -> do_ref(interpret(e, env, store))
+    | Deref(_, e)          -> do_deref(interpret(e, env, store))
+    | Assign(_, e1, e2)   -> (match interpret(e1, env, store) with
                            | (REF a, store') -> do_assign a (interpret(e2, env, store'))
                            | _ -> complain "runtime error : expecting an address on left side of assignment"
                            )
-    | UnaryOp(op, e)   -> let (v, store') = interpret(e, env, store) in (do_unary(op, v), store')
-    | Op(e1, op, e2)   -> let (v1, store1) = interpret(e1, env, store) in 
-                          let (v2, store2) = interpret(e2, env, store1) in (do_oper(op, v1, v2), store2) 
-    | If(e1, e2, e3)   -> let (v, store') = interpret(e1, env, store) in 
-                          (match v with 
+    | UnaryOp(_, op, e)   -> let (v, store') = interpret(e, env, store) in (do_unary(op, v), store')
+    | Op(_, e1, op, e2)   -> let (v1, store1) = interpret(e1, env, store) in
+                          let (v2, store2) = interpret(e2, env, store1) in (do_oper(op, v1, v2), store2)
+    | If(_, e1, e2, e3)   -> let (v, store') = interpret(e1, env, store) in
+                          (match v with
                           | BOOL true -> interpret(e2, env, store')
                           | BOOL false -> interpret(e3, env, store')
                           | _ -> complain "runtime error.  Expecting a boolean!"
                           )
-    | Pair(e1, e2)     -> let (v1, store1) = interpret(e1, env, store) in 
-                          let (v2, store2) = interpret(e2, env, store1) in (PAIR(v1, v2), store2) 
-    | Fst e            -> (match interpret(e, env, store) with 
-                           | (PAIR (v1, _), store') -> (v1, store') 
+    | Pair(_, e1, e2)     -> let (v1, store1) = interpret(e1, env, store) in
+                          let (v2, store2) = interpret(e2, env, store1) in (PAIR(v1, v2), store2)
+    | Fst(_, e)            -> (match interpret(e, env, store) with
+                           | (PAIR (v1, _), store') -> (v1, store')
                            | (_, _) -> complain "runtime error.  Expecting a pair!"
                           )
-    | Snd e            -> (match interpret(e, env, store) with 
-                           | (PAIR (_, v2), store') -> (v2, store') 
+    | Snd(_, e)            -> (match interpret(e, env, store) with
+                           | (PAIR (_, v2), store') -> (v2, store')
                            | (_, _) -> complain "runtime error.  Expecting a pair!"
                           )
-    | Inl e            -> let (v, store') = interpret(e, env, store) in (INL v, store') 
-    | Inr e            -> let (v, store') = interpret(e, env, store) in (INR v, store') 
-    | Case(e, (x1, e1), (x2, e2)) -> 
-      let (v, store') = interpret(e, env, store) in 
-       (match v with 
-       | INL v' -> interpret(e1, update(env, (x1, v')), store') 
+    | Inl(_, e)            -> let (v, store') = interpret(e, env, store) in (INL v, store')
+    | Inr(_, e)            -> let (v, store') = interpret(e, env, store) in (INR v, store')
+    | Case(_, e, (_, x1, e1), (_, x2, e2)) ->
+      let (v, store') = interpret(e, env, store) in
+       (match v with
+       | INL v' -> interpret(e1, update(env, (x1, v')), store')
        | INR v' -> interpret(e2, update(env, (x2, v')), store')
        | _ -> complain "runtime error.  Expecting inl or inr!"
        )
-    | Lambda(x, e)     -> (FUN (fun (v, s) -> interpret(e, update(env, (x, v)), s)), store)
-    | App(e1, e2)      -> let (v2, store1) = interpret(e2, env, store) in 
-                          let (v1, store2) =  interpret(e1, env, store1) in 
-                           (match v1 with 
+    | Lambda(_, x, e)     -> (FUN (fun (v, s) -> interpret(e, update(env, (x, v)), s)), store)
+    | App(_, e1, e2)      -> let (v2, store1) = interpret(e2, env, store) in
+                          let (v1, store2) =  interpret(e1, env, store1) in
+                           (match v1 with
                            | FUN f -> f (v2, store2)
                            | _ -> complain "runtime error.  Expecting a function!"
                           )
-    | LetFun(f, (x, body), e) -> 
+    | LetFun(_, f, (_, x, body), e) ->
        let new_env = update(env, (f, FUN (fun (v, s) -> interpret(body, update(env, (x, v)), s))))
-       in interpret(e, new_env, store) 
-    | LetRecFun(f, (x, body), e) -> 
-       let rec new_env g = (* a recursive environment! *) 
+       in interpret(e, new_env, store)
+    | LetRecFun(_, f, (_, x, body), e) ->
+       let rec new_env g = (* a recursive environment! *)
            if g = f then FUN (fun (v, s) -> interpret(body, update(new_env, (x, v)), s)) else env g
        in interpret(e, new_env, store) 
 
@@ -174,9 +174,4 @@ let empty_store = fun x -> complain ((string_of_int x) ^ " is not allocated!\n")
 
 (* interpret_top_level : expr -> value *) 
 let interpret_top_level e = let (v, _) = interpret(e, empty_env, empty_store) in v 
-    
-
-
-      
-    
-    
+ 

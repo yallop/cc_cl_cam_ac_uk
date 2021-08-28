@@ -42,9 +42,15 @@ let emit_x86 e =
     let base_name = String.sub Option.infile 0 ((String.length Option.infile) - 6)
 			     
     in let out_chan = open_out (base_name ^ ".s")
-			       
-    in let tab(c) = output_string out_chan ("\t" ^ c ^ "\n")
-				     
+
+    in let tab c = output_string out_chan ("\t" ^ c ^ "\n")
+
+    (* It would be nice to print source locations next to each line.
+		   Exercise: pass the location data while maintaining a semblence
+			 of polymorphism. 
+			 
+			 *cough* typeclasses *cough*
+		*)
     in let cmd c comment =
 	       ((*want comments to line up nicely! *)
 		 let l = String.length c in
@@ -254,35 +260,35 @@ let emit_x86 e =
 	    
     (* emit command *) 	    
     in let emitc = function
-	  | UNARY op -> unary op 
-	  | OPER op  -> binary op 
-	  | MK_PAIR  -> mkpair () 
-	  | FST      -> fst() 
-	  | SND      -> snd()
-	  | MK_INL   -> mkinl()
-	  | MK_INR   -> mkinr()
-	  | MK_REF   -> mkref()
-	  | DEREF    -> deref() 
-	  | ASSIGN   -> assign()
-	  | APPLY    -> apply () 
-	  | RETURN   -> ret()
-	  | LABEL l  -> label l 
-	  | SWAP     -> swap ()
-	  | TEST (l, _) -> test l 			     			     
-	  | GOTO (l, _) -> goto l 			     
-	  | CASE (l, _) -> case l
-	  | MK_CLOSURE ((l, _), n)         -> closure(l, n) 				  
-	  | LOOKUP (STACK_LOCATION offset) -> stack_lookup (0 - offset) (* stack grows downward, so negate offsets *) 
-	  | LOOKUP (HEAP_LOCATION offset)  -> heap_lookup offset			      
-	  | POP                     -> cmd "addq $8, %rsp" "pop stack \n"
-	  | PUSH (STACK_INT i)      -> cmd ("pushq $" ^ (string_of_int i)) "push int \n"
-	  | PUSH (STACK_BOOL true)  -> cmd "pushq $1" "push true \n"
-	  | PUSH (STACK_BOOL false) -> cmd "pushq $0" "push false \n"
-	  | PUSH STACK_UNIT         -> cmd "pushq $0" "push false \n"
-	  | PUSH (STACK_HI _)       -> complain "Internal Error : Jargon code never explicitly pushes stack pointer"
-	  | PUSH (STACK_RA _)       -> complain "Internal Error : Jargon code never explicitly pushes return address"
-	  | PUSH (STACK_FP _)       -> complain "Internal Error : Jargon code never explicitly pushes frame pointer"
-	  | HALT                    -> complain "HALT found in Jargon code from Jargon.comp"
+	  | UNARY(_, op) -> unary op
+	  | OPER(_, op)  -> binary op
+	  | MK_PAIR _  -> mkpair ()
+	  | FST _      -> fst()
+	  | SND _      -> snd()
+	  | MK_INL _   -> mkinl()
+	  | MK_INR _   -> mkinr()
+	  | MK_REF _   -> mkref()
+	  | DEREF _    -> deref()
+	  | ASSIGN _   -> assign()
+	  | APPLY _    -> apply ()
+	  | RETURN _   -> ret()
+	  | LABEL(_, loc)  -> label loc
+	  | SWAP _     -> swap ()
+	  | TEST(_, (loc, _)) -> test loc
+	  | GOTO(_, (loc, _)) -> goto loc
+	  | CASE(_, (loc, _)) -> case loc
+	  | MK_CLOSURE(_, (loc, _), n)         -> closure(loc, n)
+	  | LOOKUP(_, STACK_LOCATION offset) -> stack_lookup (0 - offset) (* stack grows downward, so negate offsets *)
+	  | LOOKUP(_, HEAP_LOCATION offset)  -> heap_lookup offset
+	  | POP _                     -> cmd "addq $8, %rsp" "pop stack \n"
+	  | PUSH(_, STACK_INT i)      -> cmd ("pushq $" ^ (string_of_int i)) "push int \n"
+	  | PUSH(_, STACK_BOOL true)  -> cmd "pushq $1" "push true \n"
+	  | PUSH(_, STACK_BOOL false) -> cmd "pushq $0" "push false \n"
+	  | PUSH(_, STACK_UNIT)         -> cmd "pushq $0" "push false \n"
+	  | PUSH(_, STACK_HI _)       -> complain "Internal Error : Jargon code never explicitly pushes stack pointer"
+	  | PUSH(_, STACK_RA _)       -> complain "Internal Error : Jargon code never explicitly pushes return address"
+	  | PUSH(_, STACK_FP _)       -> complain "Internal Error : Jargon code never explicitly pushes frame pointer"
+	  | HALT _                  -> complain "HALT found in Jargon code from Jargon.comp"
 
     in let rec emitl = function [] -> () | c::l -> (emitc c; emitl l)
 

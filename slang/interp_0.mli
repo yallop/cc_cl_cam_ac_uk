@@ -18,7 +18,6 @@ type env = Ast.var -> value
 
 val string_of_value : value -> string 
 
-val interpret :  Ast.expr * env * store -> (value * store) 
+val interpret :  ('a Ast.expr) * env * store -> (value * store)
 
-val interpret_top_level : Ast.expr -> value 
-
+val interpret_top_level : ('a Ast.expr) -> value
