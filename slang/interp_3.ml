@@ -335,7 +335,7 @@ let rec comp = function
                            @ c3
 		           @ [LABEL (l, after_else_label)]))
  | Seq(_, [])         -> ([], [])
- | Seq(l, [e])        -> comp e
+ | Seq(_, [e])        -> comp e
  | Seq(l, (e ::rest)) -> let (defs1, c1) = comp e in
                      let (defs2, c2) = comp (Seq (l, rest)) in
                        (defs1 @ defs2, c1 @ [POP l] @ c2)
@@ -388,14 +388,14 @@ let rec comp = function
                       let (defs1, c1) = comp e1 in
                       let (defs2, c2) = comp e2 in
                       let lab = new_label () in
-                      let def = [LABEL(l, lab); BIND(l,x)] @ c1 @ [SWAP l; POP l; RETURN l] in
+                      let def = [LABEL(l, lab); BIND(l',x)] @ c1 @ [SWAP l; POP l; RETURN l] in
                           (def @ defs1 @ defs2,
                            [MK_CLOSURE(l, (lab, None)); BIND (l, f)] @ c2 @ [SWAP l; POP l])
  | LetRecFun(l, f, (l', x, e1), e2) ->
                       let (defs1, c1) = comp e1 in
                       let (defs2, c2) = comp e2 in
                       let lab = new_label () in
-                      let def = [LABEL(l, lab); BIND(l, x)] @ c1 @ [SWAP l; POP l; RETURN l] in
+                      let def = [LABEL(l, lab); BIND(l', x)] @ c1 @ [SWAP l; POP l; RETURN l] in
                           (def @ defs1 @ defs2,
                            [MK_REC(l, f, (lab, None)); BIND(l, f)] @ c2 @ [SWAP l; POP l])
 let compile e =

@@ -88,8 +88,6 @@ val step : vm_state -> vm_state
 
 val driver : int -> vm_state -> vm_state 
 
-val driver : int -> vm_state -> vm_state
-
 type 'a listing = 'a instruction list
 
 val comp : (Past.var * value_path) list ->

@@ -304,8 +304,8 @@ let rec compile = function
        @ [CASE(l, (BIND(l', x1)) :: (compile e1) @ leave_scope l,
                (BIND(l'', x2)) :: (compile e2) @ leave_scope l)]
  | If(l, e1, e2, e3) -> (compile e1) @ [TEST(l, compile e2, compile e3)]
- | Seq(l, [])         -> []
- | Seq(l, [e])        -> compile e
+ | Seq(_, [])         -> []
+ | Seq(_, [e])        -> compile e
  (* Locations on sequence should highlight entire code blocks? *)
  | Seq(l, (e ::rest)) -> (compile e) @ [POP l] @ (compile (Seq(l, rest)))
  | Ref(l, e)          -> (compile e) @ [MK_REF l]
