@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import Progress, { keyHandler } from "./Progress";
 import Editor from "./Editor";
+import Progress, { keyHandler } from "./Progress";
+import { computeI2steps } from "./slangWrapper";
 
 import "./Stacks.css";
 
@@ -18,12 +19,18 @@ const trimClosures = (ss: string[]) => {
 };
 
 const Interpreter2 = ({
-  steps,
+  source,
   onClose,
 }: {
-  steps: Steps;
+  source: string;
   onClose?: () => void;
 }) => {
+  const [steps, setSteps] = useState<Steps>(computeI2steps(source));
+  // We only compile the steps if the prop changes
+  useEffect(() => {
+    setSteps(computeI2steps(source));
+  }, [source]);
+
   const [step, setStep] = useState(0);
   const [codeStack, envStack, memory] = steps[step];
 

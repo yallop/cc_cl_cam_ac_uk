@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
 import Cytoscape from "cytoscape";
 //@ts-ignore
@@ -8,6 +8,7 @@ import { useDebouncedCallback } from "use-debounce";
 import Progress, { keyHandler } from "./Progress";
 import Editor from "./Editor";
 import "./Stacks.css";
+import { computeJargonSteps } from "./slangWrapper";
 
 Cytoscape.use(klay);
 
@@ -54,12 +55,18 @@ type pointers = {
 };
 
 const InterpreterJargon = ({
-  steps,
+  source,
   onClose,
 }: {
-  steps: jargonStepsT;
+  source: string;
   onClose?: () => void;
 }) => {
+  const [steps, setSteps] = useState(computeJargonSteps(source));
+  // We only compile the steps if the prop changes
+  useEffect(() => {
+    setSteps(computeJargonSteps(source));
+  }, [source]);
+
   const [installedCode, stepsList] = steps;
 
   const installedCodeS = installedCode.join("\n");

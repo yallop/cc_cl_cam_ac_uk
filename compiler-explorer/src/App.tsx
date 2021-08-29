@@ -10,16 +10,13 @@ import Interpreter3 from "./Interpreter3";
 import InterpreterJargon from "./InterpreterJargon";
 import "./App.css";
 import {
-  i2compile,
-  computeI2steps,
-  i3compile,
-  computeI3steps,
-  interp,
-  jargonCompile,
-  computeJargonSteps,
-  stringOfCode,
   code,
   highlightRowsForLocation,
+  i2compile,
+  i3compile,
+  interp,
+  jargonCompile,
+  stringOfCode,
 } from "./slangWrapper";
 import Editor from "./Editor";
 
@@ -47,7 +44,7 @@ function App() {
   const [volatileSource, setSource] = useState(fib);
   const [source] = useDebounce(volatileSource, 1000);
 
-  const [result, setResult] = useState(interp(source));
+  const [result, setResult] = useState("");
 
   const [i2code, setI2code] = useState(i2compile(source));
   const i2codeString = stringOfCode(i2code).slice(1, -1);
@@ -55,10 +52,6 @@ function App() {
   const i3codeString = stringOfCode(i3code);
   const [jargonCode, setJargonCode] = useState(jargonCompile(source));
   const jargonCodeString = stringOfCode(jargonCode);
-
-  const [i2Steps, setI2Steps] = useState(computeI2steps(source));
-  const [i3Steps, setI3Steps] = useState(computeI3steps(source));
-  const [jargonSteps, setJargonSteps] = useState(computeJargonSteps(source));
 
   const [showI2, setShowI2] = useState(false);
   const [showI3, setShowI3] = useState(false);
@@ -117,12 +110,9 @@ function App() {
   }, [monaco]);
 
   useEffect(() => {
-    setResult(interp(source));
+    setResult("");
     setI2code(i2compile(source));
     setI3code(i3compile(source));
-    setI2Steps(computeI2steps(source));
-    setI3Steps(computeI3steps(source));
-    setJargonSteps(computeJargonSteps(source));
     setJargonCode(jargonCompile(source));
   }, [source]);
 
@@ -158,7 +148,9 @@ function App() {
           }}
         />
         <div className="resultBox">
-          <p>Result: {result}</p>
+          <button disabled={!!result} onClick={() => setResult(interp(source))}>
+            {result === "" ? "Compute Result" : result}
+          </button>
         </div>
       </div>
       <div className="editorWrapper">
@@ -220,14 +212,14 @@ function App() {
         </button>
       </div>
       {showI2 ? (
-        <Interpreter2 steps={i2Steps} onClose={() => setShowI2(false)} />
+        <Interpreter2 source={source} onClose={() => setShowI2(false)} />
       ) : null}
       {showI3 ? (
-        <Interpreter3 steps={i3Steps} onClose={() => setShowI3(false)} />
+        <Interpreter3 source={source} onClose={() => setShowI3(false)} />
       ) : null}
       {showJargon ? (
         <InterpreterJargon
-          steps={jargonSteps}
+          source={source}
           onClose={() => setShowJargon(false)}
         />
       ) : null}

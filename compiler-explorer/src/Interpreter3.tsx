@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Progress, { keyHandler } from "./Progress";
 import Editor from "./Editor";
+import { computeI3steps } from "./slangWrapper";
+
 import "./Stacks.css";
 import { Monaco } from "@monaco-editor/react";
 
@@ -12,12 +14,18 @@ type Memory = string[];
 type Steps = [Code, [CodePointer, EnvStack, Memory][]];
 
 const Interpreter3 = ({
-  steps,
+  source,
   onClose,
 }: {
-  steps: Steps;
+  source: string;
   onClose?: () => void;
 }) => {
+  const [steps, setSteps] = useState<Steps>(computeI3steps(source));
+  // We only compile the steps if the prop changes
+  useEffect(() => {
+    setSteps(computeI3steps(source));
+  }, [source]);
+
   let [installedCode, stepList] = steps;
 
   installedCode = clean(installedCode);
