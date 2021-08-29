@@ -3,7 +3,7 @@ module IntMap : Map.S with type key = int
 
 type address = int 
 
-type var = string [@@deriving yojson]
+type var = string
 
 type 'a value =
      | REF of address 
@@ -14,7 +14,7 @@ type 'a value =
      | INL of 'a value
      | INR of 'a value
      | CLOSURE of 'a closure
-     | REC_CLOSURE of 'a code [@@deriving yojson]
+     | REC_CLOSURE of 'a code
 
 and 'a closure = 'a code * 'a env
 
@@ -50,12 +50,12 @@ and 'a env = 'a binding list
 
 type 'a env_or_value = EV of 'a env | V of 'a value
 
-type 'a env_value_stack = 'a env_or_value list [@@deriving yojson]
+type 'a env_value_stack = 'a env_or_value list
 
 (* array of referenced values together with next unallocated address *)
 type 'a state = ('a value IntMap.t) * int
 
-type 'a interp_state = 'a code * 'a env_value_stack * 'a state [@@deriving yojson]
+type 'a interp_state = 'a code * 'a env_value_stack * 'a state
 
 val initial_state : 'a state
 

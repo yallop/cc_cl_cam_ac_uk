@@ -22,9 +22,9 @@ module IntMap = Map.Make(struct type t = int let compare = compare end)
 
 let complain = Errors.complain
 
-type address = int [@@deriving yojson]
+type address = int
 
-type var = string [@@deriving yojson]
+type var = string
 
 type 'a value =
      | REF of address
@@ -35,7 +35,7 @@ type 'a value =
      | INL of 'a value
      | INR of 'a value
      | CLOSURE of 'a closure
-     | REC_CLOSURE of 'a code [@@deriving yojson]
+     | REC_CLOSURE of 'a code
 
 and 'a closure = 'a code * 'a env 
 
@@ -71,13 +71,13 @@ and 'a env = 'a binding list
 
 type 'a env_or_value = EV of 'a env | V of 'a value
 
-type 'a env_value_stack = 'a env_or_value list [@@deriving yojson]
+type 'a env_value_stack = 'a env_or_value list
 
 (* This is the the slang program state --- that is, values for references *) 
 (* It is an array of referenced values together with next unallocated address *)
 type 'a state = ('a value IntMap.t) * int
 
-type 'a interp_state = 'a code * 'a env_value_stack * 'a state [@@deriving yojson]
+type 'a interp_state = 'a code * 'a env_value_stack * 'a state
 
 (* Printing *) 
 
