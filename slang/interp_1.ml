@@ -281,4 +281,4 @@ let eval(e, env) = driver 1 (EXAMINE(Ast.map (fun _ -> ()) e, env, []))
 let env_empty = [] 
 
 (* interpret : expr_i1 -> value *)
-let interpret e = eval(e, env_empty)
+let interpret e = eval(Ast.map (fun _ -> ()) e, env_empty)

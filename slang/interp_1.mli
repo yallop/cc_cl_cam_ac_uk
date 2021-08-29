@@ -53,5 +53,5 @@ val driver : int -> state -> value
 
 val eval : expr_i1 * env -> value
 
-val interpret : expr_i1 -> value
+val interpret : 'a Ast.expr -> value
 
