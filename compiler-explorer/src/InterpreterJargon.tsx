@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
 import Cytoscape from "cytoscape";
 //@ts-ignore
@@ -80,18 +80,6 @@ const InterpreterJargon = ({
   const memory = heap.join("\n");
   const showMemory = stepsList.some(({ heap }) => heap.length > 0);
 
-  const setCodeDecorations = useState({})[1];
-  const codeEditorRef = useRef<any>(null);
-  const codeMonacoRef = useRef<any>(null);
-
-  const setEnvDecorations = useState({})[1];
-  const envEditorRef = useRef<any>(null);
-  const envMonacoRef = useRef<any>(null);
-
-  const setHeapDecorations = useState({})[1];
-  const heapEditorRef = useRef<any>(null);
-  const heapMonacoRef = useRef<any>(null);
-
   const [pointers, setPointers] = useState<pointers>({
     heap: {
       show: false,
@@ -103,142 +91,60 @@ const InterpreterJargon = ({
     },
   });
 
-  const codeEditorDidMount = (editor: any, monaco: any) => {
-    codeEditorRef.current = editor;
-    codeMonacoRef.current = monaco;
-    setCodeDecorations(
-      codeEditorRef.current.deltaDecorations({}, [
-        {
-          range: new codeMonacoRef.current.Range(
-            currentInst,
-            1,
-            currentInst,
-            1
-          ),
-          options: {
-            isWholeLine: true,
-            linesDecorationsClassName: "currentLineDec",
-          },
-        },
-      ])
-    );
-  };
-
   const handler = keyHandler(step, setStep, stepsList.length);
-  const handlerRef = useRef(handler);
-  useEffect(() => {
-    handlerRef.current = handler;
-  }, [handler]);
 
-  const envEditorDidMount = (editor: any, monaco: any) => {
-    envEditorRef.current = editor;
-    envMonacoRef.current = monaco;
-    setEnvDecorations(envEditorRef.current.getModel().getAllDecorations());
+  const codeDecorationsHandler = (e: any, m: any) => {
+    e.revealRange(new m.Range(currentInst, 1, currentInst, 1));
+    e.setPosition({
+      column: 0,
+      lineNumber: currentInst,
+    });
+    return [
+      {
+        range: new m.Range(currentInst, 1, currentInst, 1),
+        options: {
+          isWholeLine: true,
+          linesDecorationsClassName: "currentLineDec",
+        },
+      },
+      {
+        range: new m.Range(pointers.code.heap, 1, pointers.code.heap, 1),
+        options: {
+          isWholeLine: true,
+          linesDecorationsClassName: pointers.code.showHeap
+            ? "heapPointerDec"
+            : "",
+        },
+      },
+    ];
   };
 
-  const heapEditorDidMount = (editor: any, monaco: any) => {
-    heapEditorRef.current = editor;
-    heapMonacoRef.current = monaco;
-    setHeapDecorations(codeEditorRef.current.deltaDecorations({}, []));
+  const envDecorationsHandler = (e: any, m: any) => {
+    return [
+      {
+        range: new m.Range(currentFrame, 1, currentFrame, 1),
+        options: {
+          isWholeLine: true,
+          linesDecorationsClassName: "framePointerDec",
+        },
+      },
+    ];
   };
 
-  useEffect(() => {
-    if (codeEditorRef.current && codeMonacoRef.current) {
-      codeEditorRef.current.revealRange(
-        new codeMonacoRef.current.Range(currentInst, 1, currentInst, 1)
-      );
-      codeEditorRef.current.setPosition({
-        column: 0,
-        lineNumber: currentInst,
-      });
-      setCodeDecorations((decorations) =>
-        codeEditorRef.current.deltaDecorations(decorations, [
-          {
-            range: new codeMonacoRef.current.Range(
-              currentInst,
-              1,
-              currentInst,
-              1
-            ),
-            options: {
-              isWholeLine: true,
-              linesDecorationsClassName: "currentLineDec",
-            },
-          },
-          {
-            range: new codeMonacoRef.current.Range(
-              pointers.code.heap,
-              1,
-              pointers.code.heap,
-              1
-            ),
-            options: {
-              isWholeLine: true,
-              linesDecorationsClassName: pointers.code.showHeap
-                ? "heapPointerDec"
-                : "",
-            },
-          },
-        ])
-      );
+  const heapDecorationsHandler = (e: any, m: any) => {
+    if (pointers.heap.show) {
+      e.revealRange(new m.Range(pointers.heap.val, 1, pointers.heap.val, 1));
     }
-    if (envEditorRef.current && envMonacoRef.current) {
-      setEnvDecorations((decorations) =>
-        envEditorRef.current.deltaDecorations(decorations, [
-          {
-            range: new envMonacoRef.current.Range(
-              currentFrame,
-              1,
-              currentFrame,
-              1
-            ),
-            options: {
-              isWholeLine: true,
-              linesDecorationsClassName: "framePointerDec",
-            },
-          },
-        ])
-      );
-    }
-    if (heapEditorRef.current && heapMonacoRef.current) {
-      if (pointers.heap.show) {
-        heapEditorRef.current.revealRange(
-          new heapMonacoRef.current.Range(
-            pointers.heap.val,
-            1,
-            pointers.heap.val,
-            1
-          )
-        );
-      }
-      setHeapDecorations((decorations) =>
-        heapEditorRef.current.deltaDecorations(decorations, [
-          {
-            range: new heapMonacoRef.current.Range(
-              pointers.heap.val,
-              1,
-              pointers.heap.val,
-              1
-            ),
-            options: {
-              isWholeLine: true,
-              linesDecorationsClassName: pointers.heap.show
-                ? "heapPointerDec"
-                : "",
-            },
-          },
-        ])
-      );
-    }
-  }, [
-    step,
-    currentInst,
-    currentFrame,
-    setCodeDecorations,
-    setEnvDecorations,
-    setHeapDecorations,
-    pointers,
-  ]);
+    return [
+      {
+        range: new m.Range(pointers.heap.val, 1, pointers.heap.val, 1),
+        options: {
+          isWholeLine: true,
+          linesDecorationsClassName: pointers.heap.show ? "heapPointerDec" : "",
+        },
+      },
+    ];
+  };
 
   const [nodes, edges] = heap_graph;
 
@@ -295,8 +201,8 @@ const InterpreterJargon = ({
           value={installedCodeS}
           width="33%"
           language="javascript"
-          onMount={codeEditorDidMount}
-          onKeyDown={(e) => handlerRef.current(e.key)}
+          onKeyDown={(e) => handler(e.key)}
+          decorations={codeDecorationsHandler}
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
@@ -307,8 +213,8 @@ const InterpreterJargon = ({
           value={envStack}
           language="javascript"
           width="33%"
-          onMount={envEditorDidMount}
-          onKeyDown={(e) => handlerRef.current(e.key)}
+          onKeyDown={(e) => handler(e.key)}
+          decorations={envDecorationsHandler}
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) =>
@@ -321,9 +227,9 @@ const InterpreterJargon = ({
             <Editor
               value={memory}
               height="50%"
-              onMount={heapEditorDidMount}
+              decorations={heapDecorationsHandler}
               language="javascript"
-              onKeyDown={(e) => handlerRef.current(e.key)}
+              onKeyDown={(e) => handler(e.key)}
               options={{
                 readOnly: true,
                 lineNumbers: (lineNumber: number) =>

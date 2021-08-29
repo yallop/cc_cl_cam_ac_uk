@@ -1,17 +1,21 @@
 import { jargonStepsT } from "./InterpreterJargon";
 
+export type code = [number, string][];
+
 //@ts-ignore
 export const interp = (s: string) => slang.interp0(s);
 
-//@ts-ignore
-export const i2compile = (s: string) => clean(slang.interp2Code(s));
-
-//@ts-ignore
-export const i3compile = (s: string) => clean(slang.interp3Code(s));
-
-export const jargonCompile = (s: string) =>
+export const i2compile = (s: string): code =>
   //@ts-ignore
-  removeEmptyLines(slang.jargonCode(s));
+  JSON.parse(slang.interp2Code(s));
+
+export const i3compile = (s: string): code =>
+  //@ts-ignore
+  JSON.parse(slang.interp3Code(s));
+
+export const jargonCompile = (s: string): code =>
+  //@ts-ignore
+  JSON.parse(slang.jargonCode(s));
 
 export const computeI2steps = (s: string): [string[], string[], string[]][] => {
   //@ts-ignore
@@ -30,19 +34,14 @@ export const computeJargonSteps = (s: string): jargonStepsT => {
   return JSON.parse(slang.jargon(s));
 };
 
-const clean = (s: string) =>
-  s
-    .split("\n")
-    .map((s) => s.replace(/^\t/, ""))
-    // .map(s => s.replace(/^\s/, ''))
-    .map((s) => s.replace(/^\[/, ""))
-    .map((s) => s.replace(/\]$/, ""))
-    .map((s) => s.replace(/;/, ""))
-    .filter((s) => s !== "")
-    .join("\n");
+export function stringOfCode(c: code) {
+  return c.map(([_, s]) => s).join("\n");
+}
 
-const removeEmptyLines = (s: string) =>
-  s
-    .split("\n")
-    .filter((s) => s !== "")
-    .join("\n");
+export function highlightRowsForLocation(c: code, l: number): number[] {
+  return c.reduce(
+    (linesToHighlight, codeLine, i) =>
+      codeLine[0] === l ? [i, ...linesToHighlight] : linesToHighlight,
+    [] as number[]
+  );
+}

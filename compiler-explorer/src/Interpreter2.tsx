@@ -1,7 +1,6 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import Progress, { keyHandler } from "./Progress";
-import { useEffect } from "react";
 import Editor from "./Editor";
 
 import "./Stacks.css";
@@ -41,10 +40,6 @@ const Interpreter2 = ({
   const showMem = steps.some(([_, __, s]) => s.length > 0);
 
   const handler = keyHandler(step, setStep, steps.length);
-  const handlerRef = useRef(handler);
-  useEffect(() => {
-    handlerRef.current = handler;
-  }, [handler]);
 
   return (
     <div className="interpreter">
@@ -63,7 +58,7 @@ const Interpreter2 = ({
         <Editor
           value={codeStackS}
           language="javascript"
-          onKeyDown={(e) => handlerRef.current(e.key)}
+          onKeyDown={(e) => handler(e.key)}
           options={{
             readOnly: true,
             theme: "vs-dark",
@@ -75,7 +70,7 @@ const Interpreter2 = ({
           value={envStackS}
           className="i2StackEditor"
           language="javascript"
-          onKeyDown={(e) => handlerRef.current(e.key)}
+          onKeyDown={(e) => handler(e.key)}
           options={{
             readOnly: true,
             theme: "vs-dark",
@@ -87,7 +82,7 @@ const Interpreter2 = ({
           <Editor
             value={memoryS}
             language="javascript"
-            onKeyDown={(e) => handlerRef.current(e.key)}
+            onKeyDown={(e) => handler(e.key)}
             options={{
               readOnly: true,
               theme: "vs-dark",

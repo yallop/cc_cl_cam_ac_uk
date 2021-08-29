@@ -113,6 +113,10 @@ val string_of_instruction : 'a instruction -> string
 
 val string_of_value : vm_state -> string 
 
+val string_of_location : location -> string
+
+val string_of_value_path: value_path -> string
+
 val reset : unit -> unit
 
 val first_frame : vm_state -> vm_state

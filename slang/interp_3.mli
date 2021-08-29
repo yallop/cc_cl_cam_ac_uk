@@ -83,6 +83,8 @@ val string_of_env_or_value : env_or_value -> string
 
 val string_of_installed_code : unit -> string
 
+val string_of_location : location -> string
+
 val reset : unit -> unit
 
 val map : ('a -> 'b) -> 'a instruction -> 'b instruction

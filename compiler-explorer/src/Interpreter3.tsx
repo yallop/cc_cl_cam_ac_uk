@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 
 import Progress, { keyHandler } from "./Progress";
 import Editor from "./Editor";
 import "./Stacks.css";
+import { Monaco } from "@monaco-editor/react";
 
 type Code = string;
 type CodePointer = number;
@@ -28,59 +29,20 @@ const Interpreter3 = ({
   const memoryS = memory.join("\n");
   const showMem = stepList.some(([_, __, s]) => s.length > 0);
 
-  const setDecorations = useState({})[1];
-  const editorRef = useRef<any>(null);
-  const monacoRef = useRef<any>(null);
-
-  const codeEditorDidMount = (editor: any, monaco: any) => {
-    editorRef.current = editor;
-    monacoRef.current = monaco;
-    setDecorations(
-      editorRef.current.deltaDecorations({}, [
-        {
-          range: new monacoRef.current.Range(currentInst, 1, currentInst, 1),
-          options: {
-            isWholeLine: true,
-            linesDecorationsClassName: "currentLineDec",
-          },
+  const decorationsHandler = (e: any, m: Monaco) => {
+    e.revealRange(new m.Range(currentInst, 1, currentInst, 1));
+    return [
+      {
+        range: new m.Range(currentInst + 1, 1, currentInst + 1, 1),
+        options: {
+          isWholeLine: true,
+          linesDecorationsClassName: "currentLineDec",
         },
-      ])
-    );
+      },
+    ];
   };
 
-  useEffect(() => {
-    if (editorRef.current && monacoRef.current) {
-      editorRef.current.revealRange(
-        new monacoRef.current.Range(currentInst, 1, currentInst, 1)
-      );
-      editorRef.current.setPosition({
-        column: 0,
-        lineNumber: currentInst,
-      });
-      setDecorations((decorations) =>
-        editorRef.current.deltaDecorations(decorations, [
-          {
-            range: new monacoRef.current.Range(
-              currentInst + 1,
-              1,
-              currentInst + 1,
-              1
-            ),
-            options: {
-              isWholeLine: true,
-              linesDecorationsClassName: "currentLineDec",
-            },
-          },
-        ])
-      );
-    }
-  }, [step, currentInst, setDecorations]);
-
   const handler = keyHandler(step, setStep, stepList.length);
-  const handlerRef = useRef(handler);
-  useEffect(() => {
-    handlerRef.current = handler;
-  }, [handler]);
 
   return (
     <div className="interpreter">
@@ -94,8 +56,8 @@ const Interpreter3 = ({
         <Editor
           value={installedCode}
           language="javascript"
-          onMount={codeEditorDidMount}
-          onKeyDown={(e) => handlerRef.current(e.key)}
+          onKeyDown={(e) => handler(e.key)}
+          decorations={decorationsHandler}
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
@@ -105,7 +67,7 @@ const Interpreter3 = ({
         <Editor
           value={envStackS}
           language="javascript"
-          onKeyDown={(e) => handlerRef.current(e.key)}
+          onKeyDown={(e) => handler(e.key)}
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) =>
@@ -117,7 +79,7 @@ const Interpreter3 = ({
           <Editor
             value={memoryS}
             language="javascript"
-            onKeyDown={(e) => handlerRef.current(e.key)}
+            onKeyDown={(e) => handler(e.key)}
             options={{
               readOnly: true,
               lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
