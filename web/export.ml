@@ -20,7 +20,7 @@ let _ =
         (Interp_0.string_of_value (Interp_0.interpret_top_level (frontend x)))) str)
         
       method interp2     str = wrap_yojson_string (fun _ -> (
-        [%yojson_of: (string list * string list * string list) list] (Interp2.string_lists_of_steps (Interp2.steps (frontend str)))))
+        [%yojson_of: (string list * string list * string list) list] (Interp2.string_lists_of_steps (Interp2.steps @@ frontend str))))
       method interp3     str = wrap_yojson_string (fun _ -> ( Interp_3.reset();
         ([%yojson_of: string * (int * string list * string list) list] (Interp3.stacks (frontend str)))))
       method jargon      str = wrap_yojson_string (fun _ -> (Jargon.reset();

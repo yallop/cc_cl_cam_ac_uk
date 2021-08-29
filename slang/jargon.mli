@@ -118,3 +118,5 @@ val reset : unit -> unit
 val first_frame : vm_state -> vm_state
 
 val initial_state : unit instruction list -> vm_state
+
+val map : ('a -> 'b) -> 'a instruction -> 'b instruction

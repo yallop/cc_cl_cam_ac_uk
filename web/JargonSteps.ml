@@ -149,7 +149,9 @@ let rec driver n vm =
   let state = string_lists_of_vm_state vm in
   state :: if vm.Jargon.status = Jargon.Running then driver (n+1) (step vm) else []
 
+let drop_tag_of_code c = List.map (Jargon.map (fun _ -> ())) c
+
 let steps exp =
-  let c = compile exp in
+  let c = drop_tag_of_code @@ compile exp in
   let vm = Jargon.first_frame (Jargon.initial_state c) in
   (string_list_of_code vm, driver 1 vm)

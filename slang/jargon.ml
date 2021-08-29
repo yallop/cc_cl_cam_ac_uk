@@ -71,6 +71,30 @@ type 'a instruction =
   | LABEL of 'a * label
   | HALT of 'a
 
+let map f = function
+  | PUSH(a, stack_item) -> PUSH(f a, stack_item) 
+  | LOOKUP(a, value_path) -> LOOKUP(f a, value_path) 
+  | UNARY(a, unary_oper) -> UNARY(f a, unary_oper) 
+  | OPER(a, oper) -> OPER(f a, oper) 
+  | ASSIGN a -> ASSIGN (f a) 
+  | SWAP a -> SWAP (f a) 
+  | POP a -> POP (f a) 
+  | FST a -> FST (f a) 
+  | SND a  -> SND (f a)  
+  | DEREF a  -> DEREF (f a)  
+  | APPLY a  -> APPLY (f a)  
+  | RETURN a  -> RETURN (f a)  
+  | MK_PAIR a  -> MK_PAIR (f a)  
+  | MK_INL a  -> MK_INL (f a)  
+  | MK_INR a  -> MK_INR (f a)  
+  | MK_REF a  -> MK_REF (f a)  
+  | MK_CLOSURE(a, location, int) -> MK_CLOSURE(f a, location, int) 
+  | TEST(a, location) -> TEST(f a, location) 
+  | CASE(a, location) -> CASE(f a, location) 
+  | GOTO(a, location) -> GOTO(f a, location) 
+  | LABEL(a, label) -> LABEL(f a, label) 
+  | HALT a  -> HALT (f a)  
+
 type 'a listing = 'a instruction list
 
 type vm_state = 
