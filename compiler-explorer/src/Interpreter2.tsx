@@ -2,18 +2,17 @@ import { useEffect, useState } from "react";
 
 import Editor from "./Editor";
 import Progress, { keyHandler } from "./Progress";
-import { computeI2steps } from "./slangWrapper";
+import { i2Stream, Stream } from "./slangWrapper";
 
 import "./Stacks.css";
 
 type CodeStack = string[];
 type EnvStack = string[];
 type Memory = string[];
-
-type Steps = [CodeStack, EnvStack, Memory][];
+export type Steps = [CodeStack, EnvStack, Memory][];
 
 const trimClosures = (ss: string[]) => {
-  return ss.map((s, i) =>
+  return ss.map((s, _) =>
     s.length > 40 ? s.split("\n").join(" ").slice(0, 40) + "..." : s
   );
 };
@@ -25,15 +24,11 @@ const Interpreter2 = ({
   source: string;
   onClose?: () => void;
 }) => {
-  const [steps, setSteps] = useState<Steps>(computeI2steps(source));
-  // We only compile the steps if the prop changes
-  useEffect(() => {
-    setSteps(computeI2steps(source));
-  }, [source]);
-
+  const [{ steps, next }, setStream] = useState<Stream<Steps>>(
+    i2Stream(source)
+  );
   const [step, setStep] = useState(0);
   const [codeStack, envStack, memory] = steps[step];
-
   const [showNestedInstructions, setShowNestedInstructions] = useState(false);
 
   const codeStackS = (
@@ -47,6 +42,16 @@ const Interpreter2 = ({
   const showMem = steps.some(([_, __, s]) => s.length > 0);
 
   const handler = keyHandler(step, setStep, steps.length);
+
+  useEffect(() => {
+    setStream(i2Stream(source));
+  }, [source]);
+
+  useEffect(() => {
+    if (step >= steps.length - 3 && steps[steps.length - 1][0].length > 0) {
+      setStream(next());
+    }
+  }, [step, steps, next]);
 
   return (
     <div className="interpreter">
