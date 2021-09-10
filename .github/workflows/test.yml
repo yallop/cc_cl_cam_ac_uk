@@ -38,14 +38,14 @@ jobs:
       - run: opam install dune ppx_yojson_conv js_of_ocaml js_of_ocaml-ppx
 
       - run: opam exec -- dune build
-      
+
       - name: Setup node
         uses: actions/setup-node@v2
 
       - name: Install frontend deps
         working-directory: ./compiler-explorer
         run: yarn install
-          
+
       - name: Build the js-of-ocaml lib
         run: opam exec -- dune build web/export.bc.js
 
