@@ -4,6 +4,8 @@ open Interp_2
 
 type 'a steps = 'a Interp_2.interp_state list
 
+let initial_state c = (c, Interp_2.initial_env, Interp_2.initial_state)
+
 let rec driver state =
   match state with
     | ([], _, _) -> [state]
@@ -11,7 +13,7 @@ let rec driver state =
 
 let steps e =
   let c = Interp_2.compile e
-  in driver (c, Interp_2.initial_env, Interp_2.initial_state)
+  in driver (initial_state c)
 
 let string_list_of_code code = List.map Interp_2.string_of_instruction code
 
@@ -22,6 +24,34 @@ let list_of_map m = List.of_seq @@ Seq.map (fun (_, v) -> v) @@ Interp_2.IntMap.
 let string_list_of_heap (heap, _) = List.map Interp_2.string_of_value (list_of_map heap)
 
 let string_lists_of_steps steps = List.map (fun (c, e, s) -> (string_list_of_code c, string_list_of_env e, string_list_of_heap s)) steps
+
+let js_string_of_steps steps = Js_of_ocaml.Js.string @@ Yojson.Safe.to_string @@ [%yojson_of: (string list * string list * string list) list] @@ string_lists_of_steps steps
+
+
+
+(* Export a representation of each interpreter step in a stream *)
+
+let rec nsteps states n =
+  match (n, states) with
+    | (_, []) -> []
+    | (_, ([], _, _)::_) -> states
+    | (0, _) -> states
+    | (n, state::_) -> nsteps (Interp_2.step state :: states) (n-1)
+
+let rec streamDriver' states n =
+  let new_states = (nsteps states n) in
+   (object%js
+     val steps = js_string_of_steps new_states
+     method next = streamDriver' new_states n
+  end)
+
+let streamDriver e n =
+  let c = Interp_2.compile e in
+  streamDriver' [(initial_state c)] n
+
+
+
+(* Generate strings of code with location data for the frontend *)
 
 let apply_to_last f l = let length = List.length l - 1 in List.mapi (fun i x -> if length = i then f x else x) l
 

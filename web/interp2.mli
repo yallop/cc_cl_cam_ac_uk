@@ -11,3 +11,5 @@ val string_lists_of_steps : 'a steps -> (string list * string list * string list
 val loc_string_list_of_instruction : Past.loc Interp_2.instruction -> (int * string) list
 
 val loc_string_list_of_code : Past.loc Interp_2.code -> (int * string) list
+
+val streamDriver : 'a Ast.expr -> int -> string Util.stream
