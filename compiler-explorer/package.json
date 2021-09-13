@@ -2,6 +2,7 @@
   "name": "compiler-explorer",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://yallop.github.io/cc_cl_cam_ac_uk",
   "dependencies": {
     "@atlaskit/progress-indicator": "^9.0.5",
     "@monaco-editor/react": "^4.2.1",
