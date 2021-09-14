@@ -39,7 +39,7 @@ export const i2Stream = (s: string): Stream<i2Steps> => {
 export const i3Stream = (s: string): I3StreamWrapper => {
   //@ts-ignore
   const { code, stepStream } = slang.i3Stream(s);
-  return { code, stepStream: jsonParsedStream(stepStream) };
+  return { code: JSON.parse(code), stepStream: jsonParsedStream(stepStream) };
 };
 
 export const jargonStream = (s: string): JargonStreamWrapper => {

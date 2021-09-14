@@ -7,8 +7,10 @@ import { useDebouncedCallback } from "use-debounce";
 
 import Progress, { keyHandler } from "./Progress";
 import Editor from "./Editor";
-import "./Stacks.css";
 import { jargonStream, Stream } from "./slangWrapper";
+import { SubViewProps } from "./App";
+
+import "./Stacks.css";
 
 Cytoscape.use(klay);
 
@@ -23,7 +25,7 @@ export type Step = {
 }[];
 
 export type StreamWrapper = {
-  code: string[];
+  code: [number, string][];
   stepStream: Stream<Step>;
 };
 
@@ -58,11 +60,10 @@ type pointers = {
 
 const InterpreterJargon = ({
   source,
-  onClose,
-}: {
-  source: string;
-  onClose?: () => void;
-}) => {
+  onMouseMove,
+  onMouseLeave,
+  decorations,
+}: SubViewProps) => {
   const [
     {
       code,
@@ -71,7 +72,7 @@ const InterpreterJargon = ({
     setStream,
   ] = useState(jargonStream(source));
 
-  const codeString = code.join("\n");
+  const codeString = code.map(([_, s]) => s).join("\n");
   const [step, setStep] = useState(0);
   const { stack, cp, fp, heap, heap_graph } = steps[step];
 
@@ -94,7 +95,7 @@ const InterpreterJargon = ({
   }, [source]);
 
   useEffect(() => {
-    if (step === steps.length - 1 && code[cp].trim() !== "HALT") {
+    if (step === steps.length - 1 && code[cp][1].trim() !== "HALT") {
       setStream({ code, stepStream: next() });
     }
   }, [code, cp, next, step, steps.length]);
@@ -133,10 +134,11 @@ const InterpreterJargon = ({
             : "",
         },
       },
+      ...decorations(code)(e, m),
     ];
   };
 
-  const envDecorationsHandler = (e: any, m: any) => {
+  const envDecorationsHandler = (_: any, m: any) => {
     return [
       {
         range: new m.Range(currentFrame, 1, currentFrame, 1),
@@ -211,25 +213,28 @@ const InterpreterJargon = ({
         <h3>
           Step {step} - {}
         </h3>
-        {onClose ? <button onClick={onClose}>X</button> : null}
       </div>
       <div className="interpreterEditors">
         <Editor
           value={codeString}
-          width="33%"
+          width="36%"
           language="javascript"
           onKeyDown={(e) => handler(e.key)}
           decorations={codeDecorationsHandler}
+          onMouseMove={onMouseMove(code)}
+          onMouseLeave={onMouseLeave}
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
             theme: "vs-dark",
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
           }}
         />
         <Editor
           value={env}
+          width="20%"
           language="javascript"
-          width="33%"
           onKeyDown={(e) => handler(e.key)}
           decorations={envDecorationsHandler}
           options={{
@@ -237,6 +242,7 @@ const InterpreterJargon = ({
             lineNumbers: (lineNumber: number) =>
               (env.split("\n").length - lineNumber + 1).toString(),
             minimap: { enabled: false },
+            scrollBeyondLastLine: false,
           }}
         />
         <div className="jargonMem">
@@ -253,6 +259,7 @@ const InterpreterJargon = ({
                   (lineNumber - 1).toString(),
                 theme: "vs-dark",
                 minimap: { enabled: false },
+                scrollBeyondLastLine: false,
               }}
             />
           ) : null}

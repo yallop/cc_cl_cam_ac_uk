@@ -3,8 +3,15 @@
   display: flex;
   color: #d4d4d4;
   overflow-y: hidden;
+  background-color: #1e1e1e;
 }
 
+html,
+body {
+  height: 100%;
+}
+
+select,
 button {
   color: #3dc9b0;
   border-style: solid;
@@ -49,4 +56,14 @@ p {
   text-align: left;
   padding-left: 20px;
   margin: 10px 0;
+}
+
+.sourceLineDec {
+  color: rgb(47, 247, 234);
+  width: 100% !important;
+  margin-left: 3px;
+}
+
+.sourceLineDec::before {
+  content: ">>";
 }

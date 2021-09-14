@@ -7,8 +7,9 @@ import Editor from "./Editor";
 import { i3Stream, Stream } from "./slangWrapper";
 
 import "./Stacks.css";
+import { SubViewProps } from "./App";
 
-type Code = string;
+type Code = [number, string][];
 type CodePointer = number;
 type EnvStack = string[];
 type Memory = string[];
@@ -21,11 +22,10 @@ export type StreamWrapper = {
 
 const Interpreter3 = ({
   source,
-  onClose,
-}: {
-  source: string;
-  onClose?: () => void;
-}) => {
+  onMouseMove,
+  onMouseLeave,
+  decorations,
+}: SubViewProps) => {
   const [
     {
       code,
@@ -36,7 +36,7 @@ const Interpreter3 = ({
 
   const [step, setStep] = useState(0);
   const [currentInst, envStack, memory] = steps[step];
-  const cleanCode = clean(code);
+  const cleanCode = code.map(([_, s]) => s).join("\n");
 
   const envStackS = envStack.join("\n");
   const memoryS = memory.join("\n");
@@ -69,6 +69,7 @@ const Interpreter3 = ({
           linesDecorationsClassName: "currentLineDec",
         },
       },
+      ...decorations(code)(e, m),
     ];
   };
 
@@ -78,7 +79,6 @@ const Interpreter3 = ({
         <h3>
           Step {step} - {}
         </h3>
-        {onClose ? <button onClick={onClose}>X</button> : null}
       </div>
       <div className="interpreterEditors">
         <Editor
@@ -86,6 +86,8 @@ const Interpreter3 = ({
           language="javascript"
           onKeyDown={(e) => handler(e.key)}
           decorations={decorationsHandler}
+          onMouseMove={onMouseMove(code)}
+          onMouseLeave={onMouseLeave}
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
@@ -121,13 +123,5 @@ const Interpreter3 = ({
     </div>
   );
 };
-
-function clean(code: string): string {
-  return code
-    .split("\n")
-    .map((i) => i.split(" ").slice(1).join(" "))
-    .filter((i) => i.length > 0)
-    .join("\n");
-}
 
 export default Interpreter3;
