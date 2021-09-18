@@ -206,6 +206,7 @@ let rec streamDriver' vm states n =
   end)
 
 let streamDriver exp n =
+  Jargon.reset();
   let c = compile exp in
   let vm = Jargon.first_frame (Jargon.initial_state @@ drop_tag_of_code c) in
   (object%js

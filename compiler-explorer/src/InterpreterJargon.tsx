@@ -92,6 +92,7 @@ const InterpreterJargon = ({
 
   useEffect(() => {
     setStream(jargonStream(source));
+    setStep(0);
   }, [source]);
 
   useEffect(() => {
@@ -112,11 +113,6 @@ const InterpreterJargon = ({
   });
 
   const codeDecorationsHandler = (e: any, m: any) => {
-    e.revealRange(new m.Range(currentInst, 1, currentInst, 1));
-    e.setPosition({
-      column: 0,
-      lineNumber: currentInst,
-    });
     return [
       {
         range: new m.Range(currentInst, 1, currentInst, 1),

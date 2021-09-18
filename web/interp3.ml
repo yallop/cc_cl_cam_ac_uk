@@ -56,9 +56,9 @@ let stacks e =
 let rec nsteps states n = match (states, n) with
   | ([], _) -> states 
   | (_, 0) -> states
-  | ((cp, env, _)::_, n) -> if Interp_3.HALT () != Interp_3.map (fun _ -> ()) @@ Interp_3.get_instruction cp
-      then let (cp', env') = Interp_3.step (cp, env) in
-        let heapl = list_of_heap() in nsteps ((cp', env', heapl) :: states) (n - 1) else states
+  | ((cp, env, _)::_, n) -> if Interp_3.HALT () = Interp_3.map (fun _ -> ()) @@ Interp_3.get_instruction cp
+      then states else let (cp', env') = Interp_3.step (cp, env) in
+        let heapl = list_of_heap() in nsteps ((cp', env', heapl) :: states) (n - 1)
 
 let js_string_of_states states = Js.string @@ Yojson.Safe.to_string @@ [%yojson_of: (int * string list * string list) list] @@ List.map int_string_list_string_list_list_of_state states
 
@@ -70,6 +70,7 @@ let rec streamDriver' states n =
   end)
 
 let streamDriver e n =
+  Interp_3.reset();
   let c = Interp_3.compile e in
   let _ = Interp_3.installed := Interp_3.load (drop_tag_of_code c) in
   (object%js

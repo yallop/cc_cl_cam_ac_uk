@@ -52,6 +52,7 @@ const Interpreter2 = ({
 
   useEffect(() => {
     setStream(i2Stream(source));
+    setStep(0);
   }, [source]);
 
   useEffect(() => {

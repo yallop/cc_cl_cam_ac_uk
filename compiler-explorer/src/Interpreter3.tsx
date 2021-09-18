@@ -46,6 +46,7 @@ const Interpreter3 = ({
 
   useEffect(() => {
     setStream(i3Stream(source));
+    setStep(0);
   }, [source]);
 
   useEffect(() => {
@@ -60,7 +61,6 @@ const Interpreter3 = ({
   }, [step, code, next, currentInst, cleanCode, steps.length]);
 
   const decorationsHandler = (e: any, m: Monaco) => {
-    e.revealRange(new m.Range(currentInst, 1, currentInst, 1));
     return [
       {
         range: new m.Range(currentInst + 1, 1, currentInst + 1, 1),

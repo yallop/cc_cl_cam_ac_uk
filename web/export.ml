@@ -6,7 +6,7 @@ let stepCount = 40
 let wrap interp str =
   try interp str
   with 
-    | Errors.Error s -> s
+    | Errors.Error s -> "[[0, \"" ^ String.trim s ^ "\"]]"
 
 let wrap_yojson_string f = Js.string (
   try (Yojson.Safe.to_string (f()))
