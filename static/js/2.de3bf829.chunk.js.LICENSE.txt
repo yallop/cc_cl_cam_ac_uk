@@ -14,8 +14,6 @@ Licensed under The MIT License (http://opensource.org/licenses/MIT)
 
 /*! Runge-Kutta spring physics function generator. Adapted from Framer.js, copyright Koen Bok. MIT License: http://en.wikipedia.org/wiki/MIT_License */
 
-/*! https://mths.be/punycode v1.4.1 by @mathias */
-
 /** @license React v0.20.2
  * scheduler.production.min.js
  *
