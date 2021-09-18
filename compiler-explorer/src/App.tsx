@@ -12,6 +12,7 @@ import InterpreterJargon from "./InterpreterJargon";
 import { code, highlightRowsForLocation } from "./slangWrapper";
 import Editor from "./Editor";
 import IntermediateSteps from "./IntermediateSteps";
+import LandingPage from "./Landing";
 
 import "./App.css";
 
@@ -55,7 +56,7 @@ enum Paths {
 }
 type routerParams = { code: string; step: number };
 const routes = {
-  "/": () => [Paths.root, IntermediateSteps, encode(fib)],
+  "/": () => [Paths.root, LandingPage, encode(fib)],
   "/:code": ({ code }: routerParams) => [Paths.root, IntermediateSteps, code],
   "/interp2": () => [Paths.interp2, Interpreter2, encode(fib)],
   "/interp2/:code": ({ code }: routerParams) => [
@@ -174,7 +175,7 @@ function App() {
             scrollBeyondLastLine: false,
           }}
         />
-        <div className="resultBox">
+        <div className="selectBox">
           <select
             value={path}
             onChange={(e) => navigate(e.target.value + encodedCode)}

@@ -32,7 +32,17 @@ button {
   width: 25%;
 }
 
-.resultBox {
+.landing {
+  text-align: left;
+  display: flex;
+  color: #3dc9b0;
+  flex-direction: column;
+  justify-content: space-evenly;
+  width: 50%;
+  padding: 30px;
+}
+
+.selectBox {
   height: 6vh;
   display: flex;
   flex-direction: row;

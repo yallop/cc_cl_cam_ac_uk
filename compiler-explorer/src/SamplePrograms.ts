@@ -9,7 +9,9 @@ const samplePrograms = {
     end
 in
     fib(1)
-end`,
+end
+
+(* Edit me to get started *)`,
 
   fun: `(* the reason we need closures on the heap ... *) 
 
@@ -39,7 +41,7 @@ in
    let x : int = 10 in
       let  y : int = 2 in gcd(x, y) end
     end
-end`
+end`,
 };
 
 export default samplePrograms;
