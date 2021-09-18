@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { useMonaco } from "@monaco-editor/react";
+//@ts-ignore
+import { navigate, useRoutes } from "@patched/hookrouter";
 
 import languageDef from "./LanguageDef";
 import samplePrograms from "./SamplePrograms";
 import Interpreter2 from "./Interpreter2";
 import Interpreter3 from "./Interpreter3";
 import InterpreterJargon from "./InterpreterJargon";
-import "./App.css";
 import { code, highlightRowsForLocation } from "./slangWrapper";
 import Editor from "./Editor";
 import IntermediateSteps from "./IntermediateSteps";
+
+import "./App.css";
 
 const { fib } = samplePrograms;
 
@@ -44,12 +47,54 @@ const subViews: {
   jargon: ["Jargon", InterpreterJargon],
 };
 
+enum Paths {
+  root = "/",
+  interp2 = "/interp2/",
+  interp3 = "/interp3/",
+  jargon = "/jargon/",
+}
+type routerParams = { code: string; step: number };
+const routes = {
+  "/": () => [Paths.root, IntermediateSteps, encode(fib)],
+  "/:code": ({ code }: routerParams) => [Paths.root, IntermediateSteps, code],
+  "/interp2": () => [Paths.interp2, Interpreter2, encode(fib)],
+  "/interp2/:code": ({ code }: routerParams) => [
+    Paths.interp2,
+    Interpreter2,
+    code,
+  ],
+  "/interp3": () => [Paths.interp3, Interpreter3, encode(fib)],
+  "/interp3/:code": ({ code }: routerParams) => [
+    Paths.interp3,
+    Interpreter3,
+    code,
+  ],
+  "/jargon": () => [Paths.jargon, InterpreterJargon, encode(fib)],
+  "/jargon/:code": ({ code }: routerParams) => [
+    Paths.jargon,
+    InterpreterJargon,
+    code,
+  ],
+};
+
+function encode(code: string) {
+  return encodeURIComponent(code);
+}
+
+function decode(code: string) {
+  return decodeURIComponent(code);
+}
+
 function App() {
-  const [volatileSource, setSource] = useState(fib);
+  const [path, SubViewElement, encodedCode] = useRoutes(routes);
+  const code = decode(encodedCode);
+
+  const [volatileSource, setSource] = useState(code);
   const [source] = useDebounce(volatileSource, 1000);
 
-  const [subView, setSubView] = useState("allViews");
-  const SubViewElement = subViews[subView][1];
+  useEffect(() => {
+    if (source !== code) navigate(path + encode(source));
+  }, [source, path, code]);
 
   const [volatileSourceHighlight, setSourceHighlight] =
     useState<sourceHighlight>({
@@ -130,11 +175,14 @@ function App() {
           }}
         />
         <div className="resultBox">
-          <select value={subView} onChange={(e) => setSubView(e.target.value)}>
-            <option value="allViews">{subViews["allViews"][0]}</option>
-            <option value="interp2">{subViews["interp2"][0]}</option>
-            <option value="interp3">{subViews["interp3"][0]}</option>
-            <option value="jargon">{subViews["jargon"][0]}</option>
+          <select
+            value={path}
+            onChange={(e) => navigate(e.target.value + encodedCode)}
+          >
+            <option value={Paths.root}>{subViews["allViews"][0]}</option>
+            <option value={Paths.interp2}>{subViews["interp2"][0]}</option>
+            <option value={Paths.interp3}>{subViews["interp3"][0]}</option>
+            <option value={Paths.jargon}>{subViews["jargon"][0]}</option>
           </select>
         </div>
       </div>
