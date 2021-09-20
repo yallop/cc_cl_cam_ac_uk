@@ -4,7 +4,7 @@ import { Monaco } from "@monaco-editor/react";
 
 import Progress, { keyHandler } from "./Progress";
 import Editor from "./Editor";
-import { i3Stream, Stream } from "./slangWrapper";
+import { Error, i3Stream, Stream } from "./slangWrapper";
 
 import "./Stacks.css";
 import { SubViewProps } from "./App";
@@ -20,19 +20,44 @@ export type StreamWrapper = {
   stepStream: Stream<Steps>;
 };
 
+const ErrorWrapper = (props: SubViewProps) => {
+  const { source } = props;
+  const [streamWrapper, setStreamWrapper] = useState<StreamWrapper | Error>(
+    i3Stream(source)
+  );
+
+  useEffect(() => setStreamWrapper(i3Stream(source)), [source]);
+
+  if ("error" in streamWrapper) {
+    return <div className="error">{streamWrapper.error}</div>;
+  }
+
+  return (
+    <Interpreter3
+      {...props}
+      streamWrapper={streamWrapper}
+      setStreamWrapper={setStreamWrapper}
+    />
+  );
+};
+
+interface I3Props extends SubViewProps {
+  streamWrapper: StreamWrapper;
+  setStreamWrapper: (s: StreamWrapper) => void;
+}
+
 const Interpreter3 = ({
   source,
   onMouseMove,
   onMouseLeave,
   decorations,
-}: SubViewProps) => {
-  const [
-    {
-      code,
-      stepStream: { steps, next },
-    },
-    setStream,
-  ] = useState<StreamWrapper>(i3Stream(source));
+  streamWrapper,
+  setStreamWrapper,
+}: I3Props) => {
+  const {
+    code,
+    stepStream: { steps, next },
+  } = streamWrapper;
 
   const [step, setStep] = useState(0);
   const [currentInst, envStack, memory] = steps[step];
@@ -45,7 +70,6 @@ const Interpreter3 = ({
   const handler = keyHandler(step, setStep, steps.length);
 
   useEffect(() => {
-    setStream(i3Stream(source));
     setStep(0);
   }, [source]);
 
@@ -54,11 +78,19 @@ const Interpreter3 = ({
       step === steps.length - 1 &&
       cleanCode.split("\n")[currentInst] !== "HALT"
     )
-      setStream({
+      setStreamWrapper({
         code: code,
         stepStream: next(),
       });
-  }, [step, code, next, currentInst, cleanCode, steps.length]);
+  }, [
+    step,
+    code,
+    next,
+    currentInst,
+    cleanCode,
+    steps.length,
+    setStreamWrapper,
+  ]);
 
   const decorationsHandler = (e: any, m: Monaco) => {
     return [
@@ -124,4 +156,4 @@ const Interpreter3 = ({
   );
 };
 
-export default Interpreter3;
+export default ErrorWrapper;

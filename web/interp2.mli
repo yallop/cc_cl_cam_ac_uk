@@ -12,4 +12,4 @@ val loc_string_list_of_instruction : Past.loc Interp_2.instruction -> (int * str
 
 val loc_string_list_of_code : Past.loc Interp_2.code -> (int * string) list
 
-val streamDriver : Past.loc Ast.expr -> int -> string Util.stream
+val streamDriver : Past.loc Ast.expr -> int -> Util.stream

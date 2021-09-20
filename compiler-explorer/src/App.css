@@ -39,9 +39,18 @@ button {
   flex-direction: column;
   justify-content: space-evenly;
   width: 50%;
-  padding: 30px;
+  padding: 80px;
 }
 
+.error {
+  width: 50%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  color: rgb(255, 48, 29);
+  text-align: left;
+  white-space: pre-wrap;
+}
 .selectBox {
   height: 6vh;
   display: flex;

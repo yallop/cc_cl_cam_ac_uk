@@ -14,7 +14,12 @@ const IntermediateSteps = ({
   onMouseLeave,
 }: SubViewProps) => {
   const i2code = i2compile(source);
+
+  if (i2code[0][1].toLowerCase().startsWith("error")) {
+    return <div className="error">{i2code[0][1]}</div>;
+  }
   const i2codeString = stringOfCode(i2code).slice(1, -1);
+
   const i3code = i3compile(source);
   const i3codeString = stringOfCode(i3code);
   const jargonCode = jargonCompile(source);

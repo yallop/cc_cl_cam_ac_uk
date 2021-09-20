@@ -214,3 +214,7 @@ let streamDriver exp n =
     val stepStream = streamDriver' vm [] n
   end)
 
+let err s = (object%js
+  val code = Js.string @@ "Error: " ^ s
+  val stepStream = Util.errStream s
+end)

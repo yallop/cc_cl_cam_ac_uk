@@ -40,12 +40,12 @@ export interface SubViewProps {
 }
 
 const subViews: {
-  [key: string]: [string, (s: SubViewProps) => JSX.Element];
+  [key: string]: string;
 } = {
-  allViews: ["All", IntermediateSteps],
-  interp2: ["Interpreter 2", Interpreter2],
-  interp3: ["Interpreter 3", Interpreter3],
-  jargon: ["Jargon", InterpreterJargon],
+  allViews: "All",
+  interp2: "Interpreter 2",
+  interp3: "Interpreter 3",
+  jargon: "Jargon",
 };
 
 enum Paths {
@@ -180,10 +180,10 @@ function App() {
             value={path}
             onChange={(e) => navigate(e.target.value + encodedCode)}
           >
-            <option value={Paths.root}>{subViews["allViews"][0]}</option>
-            <option value={Paths.interp2}>{subViews["interp2"][0]}</option>
-            <option value={Paths.interp3}>{subViews["interp3"][0]}</option>
-            <option value={Paths.jargon}>{subViews["jargon"][0]}</option>
+            <option value={Paths.root}>{subViews.allViews}</option>
+            <option value={Paths.interp2}>{subViews.interp2}</option>
+            <option value={Paths.interp3}>{subViews.interp3}</option>
+            <option value={Paths.jargon}>{subViews.jargon}</option>
           </select>
         </div>
       </div>

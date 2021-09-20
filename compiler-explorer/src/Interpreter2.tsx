@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import Editor from "./Editor";
 import Progress, { keyHandler } from "./Progress";
-import { i2Stream, Stream } from "./slangWrapper";
+import { i2Stream, Stream, Error } from "./slangWrapper";
 import { SubViewProps } from "./App";
 
 import "./Stacks.css";
@@ -18,18 +18,48 @@ const trimClosures = (ss: string[]) => {
   );
 };
 
+const ErrorWrapper = (props: SubViewProps) => {
+  const { source } = props;
+  const [stream, setStream] = useState<Stream<Steps> | Error>(i2Stream(source));
+
+  useEffect(() => setStream(i2Stream(source)), [source]);
+
+  if ("error" in stream) {
+    return <div className="error">{stream.error}</div>;
+  }
+
+  return (
+    <Interpreter2
+      {...props}
+      stream={stream}
+      setStream={setStream}
+    ></Interpreter2>
+  );
+};
+
+interface I2Props extends SubViewProps {
+  stream: Stream<Steps>;
+  setStream: (s: Stream<Steps>) => void;
+}
+
 const Interpreter2 = ({
   source,
   onMouseMove,
   onMouseLeave,
   decorations,
-}: SubViewProps) => {
-  const [{ steps, next }, setStream] = useState<Stream<Steps>>(
-    i2Stream(source)
-  );
+  setStream,
+  stream,
+}: I2Props) => {
   const [step, setStep] = useState(0);
-  const [codeStack, envStack, memory] = steps[step];
+
   const [showNestedInstructions, setShowNestedInstructions] = useState(true);
+
+  useEffect(() => {
+    setStep(0);
+  }, [source]);
+
+  const { steps, next } = stream;
+  const [codeStack, envStack, memory] = steps[step];
 
   const filteredCodeStack = showNestedInstructions
     ? codeStack
@@ -51,15 +81,10 @@ const Interpreter2 = ({
   const handler = keyHandler(step, setStep, steps.length);
 
   useEffect(() => {
-    setStream(i2Stream(source));
-    setStep(0);
-  }, [source]);
-
-  useEffect(() => {
     if (step >= steps.length - 3 && steps[steps.length - 1][0].length > 0) {
       setStream(next());
     }
-  }, [step, steps, next]);
+  }, [step, steps, next, setStream]);
 
   return (
     <div className="interpreter">
@@ -118,4 +143,4 @@ const Interpreter2 = ({
   );
 };
 
-export default Interpreter2;
+export default ErrorWrapper;

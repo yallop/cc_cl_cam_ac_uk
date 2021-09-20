@@ -7,7 +7,7 @@ import { useDebouncedCallback } from "use-debounce";
 
 import Progress, { keyHandler } from "./Progress";
 import Editor from "./Editor";
-import { jargonStream, Stream } from "./slangWrapper";
+import { jargonStream, Stream, Error } from "./slangWrapper";
 import { SubViewProps } from "./App";
 
 import "./Stacks.css";
@@ -58,19 +58,44 @@ type pointers = {
   };
 };
 
+const ErrorWrapper = (props: SubViewProps) => {
+  const { source } = props;
+  const [streamWrapper, setStreamWrapper] = useState<StreamWrapper | Error>(
+    jargonStream(source)
+  );
+
+  useEffect(() => setStreamWrapper(jargonStream(source)), [source]);
+
+  if ("error" in streamWrapper) {
+    return <div className="error">{streamWrapper.error}</div>;
+  }
+
+  return (
+    <InterpreterJargon
+      {...props}
+      streamWrapper={streamWrapper}
+      setStreamWrapper={setStreamWrapper}
+    />
+  );
+};
+
+interface JargonProps extends SubViewProps {
+  streamWrapper: StreamWrapper;
+  setStreamWrapper: (s: StreamWrapper) => void;
+}
+
 const InterpreterJargon = ({
   source,
   onMouseMove,
   onMouseLeave,
   decorations,
-}: SubViewProps) => {
-  const [
-    {
-      code,
-      stepStream: { steps, next },
-    },
-    setStream,
-  ] = useState(jargonStream(source));
+  streamWrapper,
+  setStreamWrapper,
+}: JargonProps) => {
+  const {
+    code,
+    stepStream: { steps, next },
+  } = streamWrapper;
 
   const codeString = code.map(([_, s]) => s).join("\n");
   const [step, setStep] = useState(0);
@@ -91,15 +116,14 @@ const InterpreterJargon = ({
   const handler = keyHandler(step, setStep, steps.length);
 
   useEffect(() => {
-    setStream(jargonStream(source));
     setStep(0);
   }, [source]);
 
   useEffect(() => {
     if (step === steps.length - 1 && code[cp][1].trim() !== "HALT") {
-      setStream({ code, stepStream: next() });
+      setStreamWrapper({ code, stepStream: next() });
     }
-  }, [code, cp, next, step, steps.length]);
+  }, [code, cp, next, setStreamWrapper, step, steps.length]);
 
   const [pointers, setPointers] = useState<pointers>({
     heap: {
@@ -331,4 +355,4 @@ function nodeStyle(nodeTp: node_type) {
   return style;
 }
 
-export default InterpreterJargon;
+export default ErrorWrapper;

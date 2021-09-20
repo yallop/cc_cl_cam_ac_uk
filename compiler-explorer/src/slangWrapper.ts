@@ -4,6 +4,10 @@ import { StreamWrapper as JargonStreamWrapper } from "./InterpreterJargon";
 
 export type code = [number, string][];
 
+export type Error = {
+  error: string;
+};
+
 export type Stream<T> = {
   steps: T;
   next: () => Stream<T>;
@@ -31,20 +35,28 @@ export const jargonCompile = (s: string): code =>
   //@ts-ignore
   JSON.parse(slang.jargonCode(s));
 
-export const i2Stream = (s: string): Stream<i2Steps> => {
+export const i2Stream = (s: string): Stream<i2Steps> | Error => {
   //@ts-ignore
-  return jsonParsedStream(slang.i2Stream(s));
+  const stream = slang.i2Stream(s);
+  if (stream.steps.startsWith("Error")) return { error: stream.steps };
+  return jsonParsedStream(stream);
 };
 
-export const i3Stream = (s: string): I3StreamWrapper => {
+export const i3Stream = (s: string): I3StreamWrapper | Error => {
   //@ts-ignore
-  const { code, stepStream } = slang.i3Stream(s);
+  const streamWrapper = slang.i3Stream(s);
+  if (streamWrapper.code.startsWith("Error"))
+    return { error: streamWrapper.code };
+  const { code, stepStream } = streamWrapper;
   return { code: JSON.parse(code), stepStream: jsonParsedStream(stepStream) };
 };
 
-export const jargonStream = (s: string): JargonStreamWrapper => {
+export const jargonStream = (s: string): JargonStreamWrapper | Error => {
   //@ts-ignore
-  const { code, stepStream } = slang.jargonStream(s);
+  const streamWrapper = slang.jargonStream(s);
+  if (streamWrapper.code.startsWith("Error"))
+    return { error: streamWrapper.code };
+  const { code, stepStream } = streamWrapper;
   return { code: JSON.parse(code), stepStream: jsonParsedStream(stepStream) };
 };
 

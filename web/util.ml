@@ -1,5 +1,13 @@
+open Js_of_ocaml
+
 (* Don't be afraid of this ugly type. It creates a stream like object in js.*)
-type 'a stream = <
-   steps : Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t Js_of_ocaml.Js.readonly_prop;
-   next : 'b Js_of_ocaml.Js.meth
-> Js_of_ocaml.Js.t as 'b
+type stream = <
+   steps : Js.js_string Js.t Js.readonly_prop;
+   next : stream Js.meth
+> Js_of_ocaml.Js.t
+
+let rec errStream s : stream = (object%js
+  val steps = Js.string ("Error:" ^ s)
+  method next = errStream s
+   end
+)
