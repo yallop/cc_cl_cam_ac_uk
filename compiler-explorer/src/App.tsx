@@ -48,7 +48,7 @@ function App() {
   const [volatileSource, setSource] = useState(fib);
   const [source] = useDebounce(volatileSource, 1000);
 
-  const [subView, setSubView] = useState("allViews");
+  const [subView, setSubView] = useState("jargon");
   const SubViewElement = subViews[subView][1];
 
   const [volatileSourceHighlight, setSourceHighlight] =
