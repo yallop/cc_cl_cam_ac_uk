@@ -1,6 +1,7 @@
 open Slang
 open Jargon
 open Ast
+open Js_of_ocaml
 
 type node_tp =
   | H_INT
@@ -146,16 +147,7 @@ let string_lists_of_vm_state vm_state = match vm_state with {
 
 let string_list_of_code vm_state = List.map Jargon.string_of_instruction (Array.to_list vm_state.code)
 
-let rec driver n vm =
-  let state = string_lists_of_vm_state vm in
-  state :: if vm.Jargon.status = Jargon.Running then driver (n+1) (step vm) else []
-
-let drop_tag_of_code c = List.map (Jargon.map (fun _ -> ())) c
-
-let steps exp =
-  let c = drop_tag_of_code @@ compile exp in
-  let vm = Jargon.first_frame (Jargon.initial_state c) in
-  (string_list_of_code vm, driver 1 vm)
+(* Generate strings of code with location data for the frontend *)
 
 let location_string_list_of_instruction : Past.loc instruction -> (int * string) = function
   | UNARY({pos_lnum = lnum; _}, op) -> (lnum, "\tUNARY " ^ (string_of_uop op))
@@ -183,3 +175,41 @@ let location_string_list_of_instruction : Past.loc instruction -> (int * string)
               -> (lnum, "MK_CLOSURE(" ^ (string_of_location loc) ^ ", " ^ (string_of_int n) ^ ")")
 
 let location_string_list_of_code = List.map location_string_list_of_instruction
+
+let rec driver n vm =
+  let state = string_lists_of_vm_state vm in
+  state :: if vm.Jargon.status = Jargon.Running then driver (n+1) (step vm) else []
+
+let drop_tag_of_code c = List.map (Jargon.map (fun _ -> ())) c
+
+let steps exp =
+  let c = drop_tag_of_code @@ compile exp in
+  let vm = Jargon.first_frame (Jargon.initial_state c) in
+  (string_list_of_code vm, driver 1 vm)
+
+
+(* Export a representation of each interpreter step in a stream *)
+
+let rec nsteps vm states n =
+  if n = 0 then (vm, states) else
+  if vm.Jargon.status != Jargon.Running then (vm, states) else
+  let state = string_lists_of_vm_state vm in
+  nsteps (step vm) (state :: states) (n - 1)
+
+let js_string_of_states states = Js.string @@ Yojson.Safe.to_string @@ [%yojson_of: ret list] states
+
+let rec streamDriver' vm states n =
+  let (vm', new_states) = nsteps vm states n in
+  (object%js
+    val steps = js_string_of_states new_states
+    method next = streamDriver' vm' new_states n
+  end)
+
+let streamDriver exp n =
+  let c = compile exp in
+  let vm = Jargon.first_frame (Jargon.initial_state @@ drop_tag_of_code c) in
+  (object%js
+    val code = Js.string @@ Yojson.Safe.to_string @@ [%yojson_of: (int * string) list] @@ location_string_list_of_code c
+    val stepStream = streamDriver' vm [] n
+  end)
+
