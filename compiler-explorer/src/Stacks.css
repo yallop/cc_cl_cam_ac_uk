@@ -1,25 +1,21 @@
 .interpreter {
-  background-color: #1e1e1e;
-  position: fixed;
-  height: 100%;
-  width: 100%;
+  height: 100vh;
+  width: 75%;
 }
 
 .interpreterEditors {
   display: flex;
   flex-direction: row;
   flex-grow: 1;
-  width: 100%;
-  height: 90%;
+  height: 85vh;
 }
 
 .interpreterTitle {
-  height: 5%;
+  height: 8vh;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-direction: row;
-  padding: 0 10px 0 10px;
 }
 
 .interpreterTitle > h3 {
@@ -68,7 +64,7 @@
 }
 
 .progress {
-  height: 5%;
+  height: 7vh;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,61 +1,100 @@
 import { useState, useEffect } from "react";
 import { useDebounce } from "use-debounce";
 import { useMonaco } from "@monaco-editor/react";
+//@ts-ignore
+import { navigate, useRoutes } from "@patched/hookrouter";
 
 import languageDef from "./LanguageDef";
 import samplePrograms from "./SamplePrograms";
-import { useKeypress } from "./util";
 import Interpreter2 from "./Interpreter2";
 import Interpreter3 from "./Interpreter3";
 import InterpreterJargon from "./InterpreterJargon";
-import "./App.css";
-import {
-  code,
-  highlightRowsForLocation,
-  i2compile,
-  i3compile,
-  interp,
-  jargonCompile,
-  stringOfCode,
-} from "./slangWrapper";
+import { code, highlightRowsForLocation } from "./slangWrapper";
 import Editor from "./Editor";
+import IntermediateSteps from "./IntermediateSteps";
+
+import "./App.css";
 
 const { fib } = samplePrograms;
-// TODO: fix slang crash bug
-// //@ts-ignore
-// for (const property in slang) {
-//   //@ts-ignore
-//   slang[property] = (...args: any[]) => {
-//     try {
-//       //@ts-ignore
-//       return slang[property](...args)
-//     } catch {
-//       return "\"stack overflow\""
-//     }
-//   }
-// }
 
 type sourceHighlight = {
   highlight: boolean;
   line: number;
 };
 
+export interface SubViewProps {
+  source: string;
+  onMouseMove: (code: code) => (event: any) => void;
+  onMouseLeave: () => void;
+  decorations: (code: code) => (
+    e: any,
+    m: any
+  ) => {
+    range: any;
+    options: {
+      isWholeLine: boolean;
+      linesDecorationsClassName: string;
+    };
+  }[];
+}
+
+const subViews: {
+  [key: string]: [string, (s: SubViewProps) => JSX.Element];
+} = {
+  allViews: ["All", IntermediateSteps],
+  interp2: ["Interpreter 2", Interpreter2],
+  interp3: ["Interpreter 3", Interpreter3],
+  jargon: ["Jargon", InterpreterJargon],
+};
+
+enum Paths {
+  root = "/",
+  interp2 = "/interp2/",
+  interp3 = "/interp3/",
+  jargon = "/jargon/",
+}
+type routerParams = { code: string; step: number };
+const routes = {
+  "/": () => [Paths.root, IntermediateSteps, encode(fib)],
+  "/:code": ({ code }: routerParams) => [Paths.root, IntermediateSteps, code],
+  "/interp2": () => [Paths.interp2, Interpreter2, encode(fib)],
+  "/interp2/:code": ({ code }: routerParams) => [
+    Paths.interp2,
+    Interpreter2,
+    code,
+  ],
+  "/interp3": () => [Paths.interp3, Interpreter3, encode(fib)],
+  "/interp3/:code": ({ code }: routerParams) => [
+    Paths.interp3,
+    Interpreter3,
+    code,
+  ],
+  "/jargon": () => [Paths.jargon, InterpreterJargon, encode(fib)],
+  "/jargon/:code": ({ code }: routerParams) => [
+    Paths.jargon,
+    InterpreterJargon,
+    code,
+  ],
+};
+
+function encode(code: string) {
+  return encodeURIComponent(code);
+}
+
+function decode(code: string) {
+  return decodeURIComponent(code);
+}
+
 function App() {
-  const [volatileSource, setSource] = useState(fib);
+  const [path, SubViewElement, encodedCode] = useRoutes(routes);
+  const code = decode(encodedCode);
+
+  const [volatileSource, setSource] = useState(code);
   const [source] = useDebounce(volatileSource, 1000);
 
-  const [result, setResult] = useState("");
-
-  const [i2code, setI2code] = useState(i2compile(source));
-  const i2codeString = stringOfCode(i2code).slice(1, -1);
-  const [i3code, setI3code] = useState(i3compile(source));
-  const i3codeString = stringOfCode(i3code);
-  const [jargonCode, setJargonCode] = useState(jargonCompile(source));
-  const jargonCodeString = stringOfCode(jargonCode);
-
-  const [showI2, setShowI2] = useState(false);
-  const [showI3, setShowI3] = useState(false);
-  const [showJargon, setShowJargon] = useState(false);
+  useEffect(() => {
+    if (source !== code) navigate(path + encode(source));
+  }, [source, path, code]);
 
   const [volatileSourceHighlight, setSourceHighlight] =
     useState<sourceHighlight>({
@@ -76,7 +115,7 @@ function App() {
       range: new m.Range(l + 1, 1, l + 1, 1),
       options: {
         isWholeLine: true,
-        linesDecorationsClassName: "currentLineDec",
+        linesDecorationsClassName: "sourceLineDec",
       },
     }));
   };
@@ -89,17 +128,11 @@ function App() {
         range: new m.Range(sourceHighlight.line, 1, sourceHighlight.line, 1),
         options: {
           isWholeLine: true,
-          linesDecorationsClassName: "currentLineDec",
+          linesDecorationsClassName: "sourceLineDec",
         },
       },
     ];
   };
-
-  useKeypress(["Escape"], () => {
-    setShowI2(false);
-    setShowI3(false);
-    setShowJargon(false);
-  });
 
   const monaco = useMonaco();
 
@@ -108,13 +141,6 @@ function App() {
     monaco?.languages.register({ id: "Slang" });
     monaco?.languages.setMonarchTokensProvider("Slang", languageDef);
   }, [monaco]);
-
-  useEffect(() => {
-    setResult("");
-    setI2code(i2compile(source));
-    setI3code(i3compile(source));
-    setJargonCode(jargonCompile(source));
-  }, [source]);
 
   const onMouseMove = (code: code) => (event: any) => {
     const lineNumber = event?.target?.position?.lineNumber;
@@ -131,7 +157,7 @@ function App() {
   return (
     <div className="App">
       <div className="editorWrapper">
-        <h4>Slang</h4>
+        <h4>Source</h4>
         <Editor
           height="86vh"
           defaultValue={source}
@@ -145,84 +171,27 @@ function App() {
           options={{
             theme: "vs-dark",
             minimap: { enabled: false },
+            scrollBeyondLastLine: false,
           }}
         />
         <div className="resultBox">
-          <button disabled={!!result} onClick={() => setResult(interp(source))}>
-            {result === "" ? "Compute Result" : result}
-          </button>
+          <select
+            value={path}
+            onChange={(e) => navigate(e.target.value + encodedCode)}
+          >
+            <option value={Paths.root}>{subViews["allViews"][0]}</option>
+            <option value={Paths.interp2}>{subViews["interp2"][0]}</option>
+            <option value={Paths.interp3}>{subViews["interp3"][0]}</option>
+            <option value={Paths.jargon}>{subViews["jargon"][0]}</option>
+          </select>
         </div>
       </div>
-      <div className="editorWrapper">
-        <h4>Interpreter 2</h4>
-        <Editor
-          defaultLanguage="javascript"
-          height="86vh"
-          value={i2codeString}
-          onMouseMove={onMouseMove(i2code)}
-          onMouseLeave={onMouseLeave}
-          decorations={decorationsTargetHandler(i2code)}
-          options={{
-            tabSize: 2,
-            readOnly: true,
-            theme: "vs-dark",
-            minimap: { enabled: false },
-          }}
-        />
-        <button onClick={() => setShowI2(!showI2)}>
-          Visualize Interpretation
-        </button>
-      </div>
-      <div className="editorWrapper">
-        <h4>Interpreter 3</h4>
-        <Editor
-          defaultLanguage="javascript"
-          value={i3codeString}
-          onMouseMove={onMouseMove(i3code)}
-          onMouseLeave={onMouseLeave}
-          decorations={decorationsTargetHandler(i3code)}
-          height="86vh"
-          options={{
-            readOnly: true,
-            theme: "vs-dark",
-            minimap: { enabled: false },
-          }}
-        />
-        <button onClick={() => setShowI3(!showI3)}>
-          Visualize Interpretation
-        </button>
-      </div>
-      <div className="editorWrapper">
-        <h4>Jargon</h4>
-        <Editor
-          defaultLanguage="javascript"
-          value={jargonCodeString}
-          onMouseMove={onMouseMove(jargonCode)}
-          onMouseLeave={onMouseLeave}
-          decorations={decorationsTargetHandler(jargonCode)}
-          height="86vh"
-          options={{
-            readOnly: true,
-            theme: "vs-dark",
-            minimap: { enabled: false },
-          }}
-        />
-        <button onClick={() => setShowJargon(!showJargon)}>
-          Visualize Interpretation
-        </button>
-      </div>
-      {showI2 ? (
-        <Interpreter2 source={source} onClose={() => setShowI2(false)} />
-      ) : null}
-      {showI3 ? (
-        <Interpreter3 source={source} onClose={() => setShowI3(false)} />
-      ) : null}
-      {showJargon ? (
-        <InterpreterJargon
-          source={source}
-          onClose={() => setShowJargon(false)}
-        />
-      ) : null}
+      <SubViewElement
+        source={source}
+        onMouseMove={onMouseMove}
+        onMouseLeave={onMouseLeave}
+        decorations={decorationsTargetHandler}
+      />
     </div>
   );
 }
