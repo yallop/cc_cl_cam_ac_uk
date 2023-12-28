@@ -8,22 +8,24 @@ import { useDebouncedCallback } from "use-debounce";
 import Progress, { keyHandler } from "./Progress";
 import Editor from "./Editor";
 import "./Stacks.css";
-import { computeJargonSteps } from "./slangWrapper";
+import { jargonStream, Stream } from "./slangWrapper";
 
 Cytoscape.use(klay);
 
-export type jargonStepsT = [
-  string[],
-  {
-    stack: string[];
-    heap: string[];
-    heap_graph: heap_graph;
-    cp: number;
-    fp: number;
-    sp: number;
-    status: string;
-  }[]
-];
+export type Step = {
+  stack: string[];
+  heap: string[];
+  heap_graph: heap_graph;
+  cp: number;
+  fp: number;
+  sp: number;
+  status: string;
+}[];
+
+export type StreamWrapper = {
+  code: string[];
+  stepStream: Stream<Step>;
+};
 
 type node_type = "H_INT" | "H_BOOL" | "H_CI" | "H_HI" | "H_HEADER";
 type heap_node = {
@@ -61,21 +63,19 @@ const InterpreterJargon = ({
   source: string;
   onClose?: () => void;
 }) => {
-  const [steps, setSteps] = useState(computeJargonSteps(source));
-  // We only compile the steps if the prop changes
-  useEffect(() => {
-    setSteps(computeJargonSteps(source));
-  }, [source]);
+  const [
+    {
+      code,
+      stepStream: { steps, next },
+    },
+    setStream,
+  ] = useState(jargonStream(source));
 
-  const [installedCode, stepsList] = steps;
-
-  const installedCodeS = installedCode.join("\n");
-
+  const codeString = code.join("\n");
   const [step, setStep] = useState(0);
+  const { stack, cp, fp, heap, heap_graph } = steps[step];
 
-  const { stack, cp, fp, heap, heap_graph } = stepsList[step];
-
-  const envStack = stack
+  const env = stack
     .slice()
     .reverse()
     .map((s) => s.slice(6))
@@ -85,7 +85,19 @@ const InterpreterJargon = ({
   const currentFrame = stack.length - fp;
 
   const memory = heap.join("\n");
-  const showMemory = stepsList.some(({ heap }) => heap.length > 0);
+  const showMemory = steps.some(({ heap }) => heap.length > 0);
+
+  const handler = keyHandler(step, setStep, steps.length);
+
+  useEffect(() => {
+    setStream(jargonStream(source));
+  }, [source]);
+
+  useEffect(() => {
+    if (step === steps.length - 1 && code[cp].trim() !== "HALT") {
+      setStream({ code, stepStream: next() });
+    }
+  }, [code, cp, next, step, steps.length]);
 
   const [pointers, setPointers] = useState<pointers>({
     heap: {
@@ -97,8 +109,6 @@ const InterpreterJargon = ({
       heap: 0,
     },
   });
-
-  const handler = keyHandler(step, setStep, stepsList.length);
 
   const codeDecorationsHandler = (e: any, m: any) => {
     e.revealRange(new m.Range(currentInst, 1, currentInst, 1));
@@ -205,7 +215,7 @@ const InterpreterJargon = ({
       </div>
       <div className="interpreterEditors">
         <Editor
-          value={installedCodeS}
+          value={codeString}
           width="33%"
           language="javascript"
           onKeyDown={(e) => handler(e.key)}
@@ -217,7 +227,7 @@ const InterpreterJargon = ({
           }}
         />
         <Editor
-          value={envStack}
+          value={env}
           language="javascript"
           width="33%"
           onKeyDown={(e) => handler(e.key)}
@@ -225,7 +235,7 @@ const InterpreterJargon = ({
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) =>
-              (envStack.split("\n").length - lineNumber + 1).toString(),
+              (env.split("\n").length - lineNumber + 1).toString(),
             minimap: { enabled: false },
           }}
         />
@@ -270,7 +280,7 @@ const InterpreterJargon = ({
           />
         </div>
       </div>
-      <Progress values={steps[1]} index={step} setIndex={setStep} />
+      <Progress values={steps} index={step} setIndex={setStep} />
     </div>
   );
 };

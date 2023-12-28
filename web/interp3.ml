@@ -1,23 +1,57 @@
+open Js_of_ocaml
 open Slang
 open Interp_3
 open Ast
 
-let string_state (cp, evs, heap_list) = (cp, List.map Interp_3.string_of_env_or_value evs, List.map Interp_3.string_of_value heap_list)
+let int_string_list_string_list_list_of_state (cp, evs, heap_list) = (cp, List.map Interp_3.string_of_env_or_value evs, List.map Interp_3.string_of_value heap_list)
 
 let list_of_heap _ = Array.to_list (Array.sub Interp_3.heap 0 (!Interp_3.next_address))
 
 let drop_tag_of_code c = List.map (Interp_3.map (fun _ -> ())) c
 
-let rec driver n (cp, env) = let heapl = list_of_heap() in (cp, env, heapl) ::
+let rec driver (cp, env) = let heapl = list_of_heap() in (cp, env, heapl) ::
  if Interp_3.HALT () = Interp_3.map (fun _ -> ()) @@ Interp_3.get_instruction cp
     then []
-    else driver (n + 1) (Interp_3.step (cp, env)) 
+    else driver (Interp_3.step (cp, env)) 
 
 let stacks e =
   let c = drop_tag_of_code @@ Interp_3.compile e in
   let _ = Interp_3.installed := Interp_3.load c in 
   let installed_code = Interp_3.string_of_installed_code() in
-  (installed_code, List.map string_state (driver 1 (0, [])))
+  (installed_code, List.map int_string_list_string_list_list_of_state (driver (0, [])))
+
+
+
+(* Export a representation of each interpreter step in a stream *)
+
+let rec nsteps states n = match (states, n) with
+  | ([], _) -> states 
+  | (_, 0) -> states
+  | ((cp, env, _)::_, n) -> if Interp_3.HALT () != Interp_3.map (fun _ -> ()) @@ Interp_3.get_instruction cp
+      then let (cp', env') = Interp_3.step (cp, env) in
+        let heapl = list_of_heap() in nsteps ((cp', env', heapl) :: states) (n - 1) else states
+
+let js_string_of_states states = Js.string @@ Yojson.Safe.to_string @@ [%yojson_of: (int * string list * string list) list] @@ List.map int_string_list_string_list_list_of_state states
+
+let rec streamDriver' states n =
+  let new_states = nsteps states n in
+  (object%js
+    val a = js_string_of_states new_states
+    method next = streamDriver' new_states n
+  end)
+
+let streamDriver e n =
+  let c = drop_tag_of_code @@ Interp_3.compile e in
+  let _ = Interp_3.installed := Interp_3.load c in
+  let installed_code = Interp_3.string_of_installed_code() in
+  (object%js
+    val installedCode = Js.string installed_code
+    val stepStream = streamDriver' [(0, [], [])] n
+  end)
+ 
+
+
+(* Generate strings of code with location data for the frontend *)
 
 let  loc_string_list_of_instruction : Past.loc instruction -> (int * string) list = function
   | UNARY({pos_lnum = lnum; _}, op) -> [(lnum, "UNARY " ^ (string_of_uop op))]
