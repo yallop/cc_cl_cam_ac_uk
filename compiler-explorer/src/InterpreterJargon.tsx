@@ -7,23 +7,27 @@ import { useDebouncedCallback } from "use-debounce";
 
 import Progress, { keyHandler } from "./Progress";
 import Editor from "./Editor";
+import { jargonStream, Stream, Error } from "./slangWrapper";
+import { SubViewProps } from "./App";
+
 import "./Stacks.css";
-import { computeJargonSteps } from "./slangWrapper";
 
 Cytoscape.use(klay);
 
-export type jargonStepsT = [
-  string[],
-  {
-    stack: string[];
-    heap: string[];
-    heap_graph: heap_graph;
-    cp: number;
-    fp: number;
-    sp: number;
-    status: string;
-  }[]
-];
+export type Step = {
+  stack: string[];
+  heap: string[];
+  heap_graph: heap_graph;
+  cp: number;
+  fp: number;
+  sp: number;
+  status: string;
+}[];
+
+export type StreamWrapper = {
+  code: [number, string][];
+  stepStream: Stream<Step>;
+};
 
 type node_type = "H_INT" | "H_BOOL" | "H_CI" | "H_HI" | "H_HEADER";
 type heap_node = {
@@ -54,28 +58,50 @@ type pointers = {
   };
 };
 
+const ErrorWrapper = (props: SubViewProps) => {
+  const { source } = props;
+  const [streamWrapper, setStreamWrapper] = useState<StreamWrapper | Error>(
+    jargonStream(source)
+  );
+
+  useEffect(() => setStreamWrapper(jargonStream(source)), [source]);
+
+  if ("error" in streamWrapper) {
+    return <div className="error">{streamWrapper.error}</div>;
+  }
+
+  return (
+    <InterpreterJargon
+      {...props}
+      streamWrapper={streamWrapper}
+      setStreamWrapper={setStreamWrapper}
+    />
+  );
+};
+
+interface JargonProps extends SubViewProps {
+  streamWrapper: StreamWrapper;
+  setStreamWrapper: (s: StreamWrapper) => void;
+}
+
 const InterpreterJargon = ({
   source,
-  onClose,
-}: {
-  source: string;
-  onClose?: () => void;
-}) => {
-  const [steps, setSteps] = useState(computeJargonSteps(source));
-  // We only compile the steps if the prop changes
-  useEffect(() => {
-    setSteps(computeJargonSteps(source));
-  }, [source]);
+  onMouseMove,
+  onMouseLeave,
+  decorations,
+  streamWrapper,
+  setStreamWrapper,
+}: JargonProps) => {
+  const {
+    code,
+    stepStream: { steps, next },
+  } = streamWrapper;
 
-  const [installedCode, stepsList] = steps;
-
-  const installedCodeS = installedCode.join("\n");
-
+  const codeString = code.map(([_, s]) => s).join("\n");
   const [step, setStep] = useState(0);
+  const { stack, cp, fp, heap, heap_graph } = steps[step];
 
-  const { stack, cp, fp, heap, heap_graph } = stepsList[step];
-
-  const envStack = stack
+  const env = stack
     .slice()
     .reverse()
     .map((s) => s.slice(6))
@@ -85,7 +111,19 @@ const InterpreterJargon = ({
   const currentFrame = stack.length - fp;
 
   const memory = heap.join("\n");
-  const showMemory = stepsList.some(({ heap }) => heap.length > 0);
+  const showMemory = steps.some(({ heap }) => heap.length > 0);
+
+  const handler = keyHandler(step, setStep, steps.length);
+
+  useEffect(() => {
+    setStep(0);
+  }, [source]);
+
+  useEffect(() => {
+    if (step === steps.length - 1 && code[cp][1].trim() !== "HALT") {
+      setStreamWrapper({ code, stepStream: next() });
+    }
+  }, [code, cp, next, setStreamWrapper, step, steps.length]);
 
   const [pointers, setPointers] = useState<pointers>({
     heap: {
@@ -98,14 +136,7 @@ const InterpreterJargon = ({
     },
   });
 
-  const handler = keyHandler(step, setStep, stepsList.length);
-
   const codeDecorationsHandler = (e: any, m: any) => {
-    e.revealRange(new m.Range(currentInst, 1, currentInst, 1));
-    e.setPosition({
-      column: 0,
-      lineNumber: currentInst,
-    });
     return [
       {
         range: new m.Range(currentInst, 1, currentInst, 1),
@@ -123,10 +154,11 @@ const InterpreterJargon = ({
             : "",
         },
       },
+      ...decorations(code)(e, m),
     ];
   };
 
-  const envDecorationsHandler = (e: any, m: any) => {
+  const envDecorationsHandler = (_: any, m: any) => {
     return [
       {
         range: new m.Range(currentFrame, 1, currentFrame, 1),
@@ -201,32 +233,36 @@ const InterpreterJargon = ({
         <h3>
           Step {step} - {}
         </h3>
-        {onClose ? <button onClick={onClose}>X</button> : null}
       </div>
       <div className="interpreterEditors">
         <Editor
-          value={installedCodeS}
-          width="33%"
+          value={codeString}
+          width="36%"
           language="javascript"
           onKeyDown={(e) => handler(e.key)}
           decorations={codeDecorationsHandler}
+          onMouseMove={onMouseMove(code)}
+          onMouseLeave={onMouseLeave}
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
             theme: "vs-dark",
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
           }}
         />
         <Editor
-          value={envStack}
+          value={env}
+          width="20%"
           language="javascript"
-          width="33%"
           onKeyDown={(e) => handler(e.key)}
           decorations={envDecorationsHandler}
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) =>
-              (envStack.split("\n").length - lineNumber + 1).toString(),
+              (env.split("\n").length - lineNumber + 1).toString(),
             minimap: { enabled: false },
+            scrollBeyondLastLine: false,
           }}
         />
         <div className="jargonMem">
@@ -243,6 +279,7 @@ const InterpreterJargon = ({
                   (lineNumber - 1).toString(),
                 theme: "vs-dark",
                 minimap: { enabled: false },
+                scrollBeyondLastLine: false,
               }}
             />
           ) : null}
@@ -270,7 +307,7 @@ const InterpreterJargon = ({
           />
         </div>
       </div>
-      <Progress values={steps[1]} index={step} setIndex={setStep} />
+      <Progress values={steps} index={step} setIndex={setStep} />
     </div>
   );
 };
@@ -318,4 +355,4 @@ function nodeStyle(nodeTp: node_type) {
   return style;
 }
 
-export default InterpreterJargon;
+export default ErrorWrapper;

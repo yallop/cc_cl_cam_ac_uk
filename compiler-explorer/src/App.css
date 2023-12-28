@@ -3,8 +3,15 @@
   display: flex;
   color: #d4d4d4;
   overflow-y: hidden;
+  background-color: #1e1e1e;
 }
 
+html,
+body {
+  height: 100%;
+}
+
+select,
 button {
   color: #3dc9b0;
   border-style: solid;
@@ -25,7 +32,26 @@ button {
   width: 25%;
 }
 
-.resultBox {
+.landing {
+  text-align: left;
+  display: flex;
+  color: #3dc9b0;
+  flex-direction: column;
+  justify-content: space-evenly;
+  width: 50%;
+  padding: 80px;
+}
+
+.error {
+  width: 50%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  color: rgb(255, 48, 29);
+  text-align: left;
+  white-space: pre-wrap;
+}
+.selectBox {
   height: 6vh;
   display: flex;
   flex-direction: row;
@@ -49,4 +75,14 @@ p {
   text-align: left;
   padding-left: 20px;
   margin: 10px 0;
+}
+
+.sourceLineDec {
+  color: rgb(47, 247, 234);
+  width: 100% !important;
+  margin-left: 3px;
+}
+
+.sourceLineDec::before {
+  content: ">>";
 }
