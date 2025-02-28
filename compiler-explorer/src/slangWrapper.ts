@@ -22,14 +22,17 @@ const parseResult = (result: string): CompilerResult => {
 };
 
 export const i2compile = (s: string): CompilerResult => {
+  //@ts-ignore
   return parseResult(slang.interp2Code(s));
 };
 
 export const i3compile = (s: string): CompilerResult => {
+  //@ts-ignore
   return parseResult(slang.interp3Code(s));
 };
 
 export const jargonCompile = (s: string): CompilerResult => {
+  //@ts-ignore
   return parseResult(slang.jargonCode(s));
 };
 
