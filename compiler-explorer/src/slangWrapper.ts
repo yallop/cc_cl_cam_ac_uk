@@ -1,21 +1,37 @@
 import { jargonStepsT } from "./InterpreterJargon";
 
-export type code = [number, string][];
+export type Code = [number, string][];
+export type CompilerResult =
+  | { code: null; error: string }
+  | { code: Code; error: null };
 
 //@ts-ignore
 export const interp = (s: string) => slang.interp0(s);
 
-export const i2compile = (s: string): code =>
-  //@ts-ignore
-  JSON.parse(slang.interp2Code(s));
+const parseResult = (result: string): CompilerResult => {
+  if (result.trim().startsWith("ERROR")) {
+    return { code: null, error: result };
+  }
 
-export const i3compile = (s: string): code =>
-  //@ts-ignore
-  JSON.parse(slang.interp3Code(s));
+  try {
+    //@ts-ignore
+    return { code: JSON.parse(result), error: null };
+  } catch (e) {
+    return { code: null, error: (e as Error).message };
+  }
+};
 
-export const jargonCompile = (s: string): code =>
-  //@ts-ignore
-  JSON.parse(slang.jargonCode(s));
+export const i2compile = (s: string): CompilerResult => {
+  return parseResult(slang.interp2Code(s));
+};
+
+export const i3compile = (s: string): CompilerResult => {
+  return parseResult(slang.interp3Code(s));
+};
+
+export const jargonCompile = (s: string): CompilerResult => {
+  return parseResult(slang.jargonCode(s));
+};
 
 export const computeI2steps = (s: string): [string[], string[], string[]][] => {
   //@ts-ignore
@@ -34,11 +50,11 @@ export const computeJargonSteps = (s: string): jargonStepsT => {
   return JSON.parse(slang.jargon(s));
 };
 
-export function stringOfCode(c: code) {
+export function stringOfCode(c: Code): string {
   return c.map(([_, s]) => s).join("\n");
 }
 
-export function highlightRowsForLocation(c: code, l: number): number[] {
+export function highlightRowsForLocation(c: Code, l: number): number[] {
   return c.reduce(
     (linesToHighlight, codeLine, i) =>
       codeLine[0] === l ? [i, ...linesToHighlight] : linesToHighlight,

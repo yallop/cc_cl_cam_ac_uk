@@ -210,10 +210,10 @@ const InterpreterJargon = ({
           language="javascript"
           onKeyDown={(e) => handler(e.key)}
           decorations={codeDecorationsHandler}
+          theme="vs-dark"
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
-            theme: "vs-dark",
           }}
         />
         <Editor
@@ -222,6 +222,7 @@ const InterpreterJargon = ({
           width="33%"
           onKeyDown={(e) => handler(e.key)}
           decorations={envDecorationsHandler}
+          theme="vs-dark"
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) =>
@@ -237,11 +238,11 @@ const InterpreterJargon = ({
               decorations={heapDecorationsHandler}
               language="javascript"
               onKeyDown={(e) => handler(e.key)}
+              theme="vs-dark"
               options={{
                 readOnly: true,
                 lineNumbers: (lineNumber: number) =>
                   (lineNumber - 1).toString(),
-                theme: "vs-dark",
                 minimap: { enabled: false },
               }}
             />

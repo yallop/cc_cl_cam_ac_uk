@@ -2,7 +2,7 @@ name: Build and deploy compiler explorer
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -12,15 +12,15 @@ jobs:
       - name: Checkout 🛎️
         uses: actions/checkout@v2.3.1
 
-      - name: Use OCaml
-        uses: ocaml/setup-ocaml@v2
-        with:
-          ocaml-compiler: 4.12.x
+      # - name: Use OCaml
+      #   uses: ocaml/setup-ocaml@v2
+      #   with:
+      #     ocaml-compiler: 4.12.x
 
-      - run: opam install dune ppx_yojson_conv js_of_ocaml js_of_ocaml-ppx
+      # - run: opam install dune ppx_yojson_conv js_of_ocaml js_of_ocaml-ppx
 
-      - name: Build the js-of-ocaml lib
-        run: opam exec -- dune build web/export.bc.js
+      # - name: Build the js-of-ocaml lib
+      #   run: opam exec -- dune build web/export.bc.js
 
       - name: Install and Build 🔧
         working-directory: ./compiler-explorer

@@ -32,6 +32,15 @@ button {
   justify-content: center;
 }
 
+.errorBox {
+  color: #ff6467;
+  font-family: monospace;
+  font-size: medium;
+  text-align: left;
+  align-content: center;
+  flex-grow: 1;
+}
+
 h4 {
   margin: 0;
   height: 8vh;

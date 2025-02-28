@@ -66,16 +66,17 @@ const Interpreter3 = ({
           language="javascript"
           onKeyDown={(e) => handler(e.key)}
           decorations={decorationsHandler}
+          theme="vs-dark"
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
-            theme: "vs-dark",
           }}
         />
         <Editor
           value={envStackS}
           language="javascript"
           onKeyDown={(e) => handler(e.key)}
+          theme="vs-dark"
           options={{
             readOnly: true,
             lineNumbers: (lineNumber: number) =>
@@ -88,10 +89,10 @@ const Interpreter3 = ({
             value={memoryS}
             language="javascript"
             onKeyDown={(e) => handler(e.key)}
+            theme="vs-dark"
             options={{
               readOnly: true,
               lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
-              theme: "vs-dark",
               minimap: { enabled: false },
             }}
           />

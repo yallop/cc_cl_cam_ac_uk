@@ -35,9 +35,9 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - run: opam install dune ppx_yojson_conv js_of_ocaml js_of_ocaml-ppx
+      # - run: opam install dune ppx_yojson_conv js_of_ocaml js_of_ocaml-ppx
 
-      - run: opam exec -- dune build
+      # - run: opam exec -- dune build
 
       - name: Setup node
         uses: actions/setup-node@v2

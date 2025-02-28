@@ -66,9 +66,9 @@ const Interpreter2 = ({
           value={codeStackS}
           language="javascript"
           onKeyDown={(e) => handler(e.key)}
+          theme="vs-dark"
           options={{
             readOnly: true,
-            theme: "vs-dark",
             lineNumbers: (lineNumber: number) =>
               codeStackS.split("\n").length - lineNumber + 1,
           }}
@@ -78,9 +78,9 @@ const Interpreter2 = ({
           className="i2StackEditor"
           language="javascript"
           onKeyDown={(e) => handler(e.key)}
+          theme="vs-dark"
           options={{
             readOnly: true,
-            theme: "vs-dark",
             lineNumbers: (lineNumber: number) =>
               envStackS.split("\n").length - lineNumber + 1,
           }}
@@ -90,9 +90,9 @@ const Interpreter2 = ({
             value={memoryS}
             language="javascript"
             onKeyDown={(e) => handler(e.key)}
+            theme="vs-dark"
             options={{
               readOnly: true,
-              theme: "vs-dark",
               lineNumbers: (lineNumber: number) => (lineNumber - 1).toString(),
             }}
           />

@@ -11,6 +11,7 @@ import InterpreterJargon from "./InterpreterJargon";
 import "./App.css";
 import {
   code,
+  CompilerResult,
   highlightRowsForLocation,
   i2compile,
   i3compile,
@@ -46,12 +47,16 @@ function App() {
 
   const [result, setResult] = useState("");
 
-  const [i2code, setI2code] = useState(i2compile(source));
-  const i2codeString = stringOfCode(i2code).slice(1, -1);
-  const [i3code, setI3code] = useState(i3compile(source));
-  const i3codeString = stringOfCode(i3code);
-  const [jargonCode, setJargonCode] = useState(jargonCompile(source));
-  const jargonCodeString = stringOfCode(jargonCode);
+  const [i2Result, setI2Result] = useState<CompilerResult>(i2compile(source));
+  const [i3Result, setI3Result] = useState<CompilerResult>(i3compile(source));
+  const [jargonResult, setJargonResult] = useState<CompilerResult>(
+    jargonCompile(source)
+  );
+
+  const i2codeString =
+    i2Result.code && stringOfCode(i2Result.code).slice(1, -1);
+  const i3codeString = i3Result.code && stringOfCode(i3Result.code);
+  const jargonCodeString = jargonResult.code && stringOfCode(jargonResult.code);
 
   const [showI2, setShowI2] = useState(false);
   const [showI3, setShowI3] = useState(false);
@@ -104,16 +109,15 @@ function App() {
   const monaco = useMonaco();
 
   useEffect(() => {
-    monaco?.editor.setTheme("vs-dark");
     monaco?.languages.register({ id: "Slang" });
     monaco?.languages.setMonarchTokensProvider("Slang", languageDef);
   }, [monaco]);
 
   useEffect(() => {
     setResult("");
-    setI2code(i2compile(source));
-    setI3code(i3compile(source));
-    setJargonCode(jargonCompile(source));
+    setI2Result(i2compile(source));
+    setI3Result(i3compile(source));
+    setJargonResult(jargonCompile(source));
   }, [source]);
 
   const onMouseMove = (code: code) => (event: any) => {
@@ -142,8 +146,8 @@ function App() {
           onChange={(value, _) =>
             value === undefined ? setSource("") : setSource(value)
           }
+          theme="vs-dark"
           options={{
-            theme: "vs-dark",
             minimap: { enabled: false },
           }}
         />
@@ -155,58 +159,70 @@ function App() {
       </div>
       <div className="editorWrapper">
         <h4>Interpreter 2</h4>
-        <Editor
-          defaultLanguage="javascript"
-          height="86vh"
-          value={i2codeString}
-          onMouseMove={onMouseMove(i2code)}
-          onMouseLeave={onMouseLeave}
-          decorations={decorationsTargetHandler(i2code)}
-          options={{
-            tabSize: 2,
-            readOnly: true,
-            theme: "vs-dark",
-            minimap: { enabled: false },
-          }}
-        />
+        {i2Result.error ? (
+          <div className="errorBox">{i2Result.error}</div>
+        ) : (
+          <Editor
+            defaultLanguage="javascript"
+            height="86vh"
+            value={i2codeString}
+            onMouseMove={onMouseMove(i2Result.code)}
+            onMouseLeave={onMouseLeave}
+            decorations={decorationsTargetHandler(i2Result.code)}
+            theme="vs-dark"
+            options={{
+              tabSize: 2,
+              readOnly: true,
+              minimap: { enabled: false },
+            }}
+          />
+        )}
         <button onClick={() => setShowI2(!showI2)}>
           Visualize Interpretation
         </button>
       </div>
       <div className="editorWrapper">
         <h4>Interpreter 3</h4>
-        <Editor
-          defaultLanguage="javascript"
-          value={i3codeString}
-          onMouseMove={onMouseMove(i3code)}
-          onMouseLeave={onMouseLeave}
-          decorations={decorationsTargetHandler(i3code)}
-          height="86vh"
-          options={{
-            readOnly: true,
-            theme: "vs-dark",
-            minimap: { enabled: false },
-          }}
-        />
+        {i3Result.error ? (
+          <div className="errorBox">{i3Result.error}</div>
+        ) : (
+          <Editor
+            defaultLanguage="javascript"
+            value={i3codeString}
+            onMouseMove={onMouseMove(i3Result.code)}
+            onMouseLeave={onMouseLeave}
+            decorations={decorationsTargetHandler(i3Result.code)}
+            height="86vh"
+            theme="vs-dark"
+            options={{
+              readOnly: true,
+              minimap: { enabled: false },
+            }}
+          />
+        )}
         <button onClick={() => setShowI3(!showI3)}>
           Visualize Interpretation
         </button>
       </div>
       <div className="editorWrapper">
         <h4>Jargon</h4>
-        <Editor
-          defaultLanguage="javascript"
-          value={jargonCodeString}
-          onMouseMove={onMouseMove(jargonCode)}
-          onMouseLeave={onMouseLeave}
-          decorations={decorationsTargetHandler(jargonCode)}
-          height="86vh"
-          options={{
-            readOnly: true,
-            theme: "vs-dark",
-            minimap: { enabled: false },
-          }}
-        />
+        {jargonResult.error ? (
+          <div className="errorBox">{jargonResult.error}</div>
+        ) : (
+          <Editor
+            defaultLanguage="javascript"
+            value={jargonCodeString}
+            onMouseMove={onMouseMove(jargonResult.code)}
+            onMouseLeave={onMouseLeave}
+            decorations={decorationsTargetHandler(jargonResult.code)}
+            height="86vh"
+            theme="vs-dark"
+            options={{
+              readOnly: true,
+              minimap: { enabled: false },
+            }}
+          />
+        )}
         <button onClick={() => setShowJargon(!showJargon)}>
           Visualize Interpretation
         </button>
