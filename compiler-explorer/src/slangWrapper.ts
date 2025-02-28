@@ -53,11 +53,3 @@ export const computeJargonSteps = (s: string): jargonStepsT => {
 export function stringOfCode(c: Code): string {
   return c.join("\n");
 }
-
-export function highlightRowsForLocation(c: Code, l: number): number[] {
-  return c.reduce(
-    (linesToHighlight, codeLine, i) =>
-      codeLine[0] === l ? [i, ...linesToHighlight] : linesToHighlight,
-    [] as number[]
-  );
-}
