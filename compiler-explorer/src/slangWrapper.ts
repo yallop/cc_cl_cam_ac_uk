@@ -1,6 +1,6 @@
 import { jargonStepsT } from "./InterpreterJargon";
 
-export type Code = [number, string][];
+export type Code = string[];
 export type CompilerResult =
   | { code: null; error: string }
   | { code: Code; error: null };
@@ -51,7 +51,7 @@ export const computeJargonSteps = (s: string): jargonStepsT => {
 };
 
 export function stringOfCode(c: Code): string {
-  return c.map(([_, s]) => s).join("\n");
+  return c.join("\n");
 }
 
 export function highlightRowsForLocation(c: Code, l: number): number[] {

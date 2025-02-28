@@ -103,7 +103,7 @@ let node_of_heap_item index parent heap_item =
 let rec node_list_of_heap_item_list_ index header n = function
   | [] -> []
   | (HEAP_HEADER (i, t))::heap_item_list ->
-      node_of_heap_item index (if n > 0 then header else "") (HEAP_HEADER (i,t)) :: node_list_of_heap_item_list_ (index + 1) (string_of_int index) (i - 1) heap_item_list 
+      node_of_heap_item index (if n > 0 then header else "") (HEAP_HEADER (i,t)) :: node_list_of_heap_item_list_ (index + 1) (string_of_int index) (i - 1) heap_item_list
   | heap_item::heap_item_list -> node_of_heap_item index (if n > 0 then header else "") heap_item :: node_list_of_heap_item_list_ (index + 1) header (n - 1) heap_item_list
 
 let node_list_of_heap_item_list heap_item_list =
@@ -150,36 +150,34 @@ let rec driver n vm =
   let state = string_lists_of_vm_state vm in
   state :: if vm.Jargon.status = Jargon.Running then driver (n+1) (step vm) else []
 
-let drop_tag_of_code c = List.map (Jargon.map (fun _ -> ())) c
-
 let steps exp =
-  let c = drop_tag_of_code @@ compile exp in
+  let c = compile exp in
   let vm = Jargon.first_frame (Jargon.initial_state c) in
   (string_list_of_code vm, driver 1 vm)
 
-let location_string_list_of_instruction : Past.loc instruction -> (int * string) = function
-  | UNARY({pos_lnum = lnum; _}, op) -> (lnum, "\tUNARY " ^ (string_of_uop op))
-  | OPER({pos_lnum = lnum; _}, op)  -> (lnum, "\tOPER " ^ (string_of_bop op))
-  | MK_PAIR {pos_lnum = lnum; _}    -> (lnum, "\tMK_PAIR")
-  | FST  {pos_lnum = lnum; _}       -> (lnum, "\tFST")
-  | SND {pos_lnum = lnum; _}        -> (lnum, "\tSND")
-  | MK_INL {pos_lnum = lnum; _}     -> (lnum, "\tMK_INL")
-  | MK_INR {pos_lnum = lnum; _}     -> (lnum, "\tMK_INR")
-  | MK_REF {pos_lnum = lnum; _}     -> (lnum, "\tMK_REF")
-  | PUSH({pos_lnum = lnum; _}, v)   -> (lnum, "\tPUSH " ^ (string_of_stack_item v))
-  | LOOKUP({pos_lnum = lnum; _}, p) -> (lnum, "\tLOOKUP " ^ (string_of_value_path p))
-  | TEST({pos_lnum = lnum; _}, l)   -> (lnum, "\tTEST " ^ (string_of_location l))
-  | CASE({pos_lnum = lnum; _}, l)   -> (lnum, "\tCASE " ^ (string_of_location l))
-  | GOTO({pos_lnum = lnum; _}, l)   -> (lnum, "\tGOTO " ^ (string_of_location l))
-  | APPLY {pos_lnum = lnum; _}      -> (lnum, "\tAPPLY")
-  | RETURN {pos_lnum = lnum; _}     -> (lnum, "\tRETURN")
-  | HALT {pos_lnum = lnum; _}       -> (lnum, "\tHALT")
-  | LABEL({pos_lnum = lnum; _}, l)  -> (lnum, "LABEL " ^ l)
-  | SWAP {pos_lnum = lnum; _}       -> (lnum, "\tSWAP")
-  | POP {pos_lnum = lnum; _}        -> (lnum, "\tPOP")
-  | DEREF {pos_lnum = lnum; _}      -> (lnum, "\tDEREF")
-  | ASSIGN {pos_lnum = lnum; _}     -> (lnum, "\tASSIGN")
-  | MK_CLOSURE ({pos_lnum = lnum; _}, loc, n)
-              -> (lnum, "MK_CLOSURE(" ^ (string_of_location loc) ^ ", " ^ (string_of_int n) ^ ")")
+let string_list_of_instruction : instruction -> (string) = function
+  | UNARY(op) -> "\tUNARY " ^ (string_of_uop op)
+  | OPER(op)  -> "\tOPER " ^ (string_of_bop op)
+  | MK_PAIR   -> "\tMK_PAIR"
+  | FST       -> "\tFST"
+  | SND       -> "\tSND"
+  | MK_INL    -> "\tMK_INL"
+  | MK_INR    -> "\tMK_INR"
+  | MK_REF    -> "\tMK_REF"
+  | PUSH(v)   -> "\tPUSH " ^ (string_of_stack_item v)
+  | LOOKUP(p) -> "\tLOOKUP " ^ (string_of_value_path p)
+  | TEST(l)   -> "\tTEST " ^ (string_of_location l)
+  | CASE(l)   -> "\tCASE " ^ (string_of_location l)
+  | GOTO(l)   -> "\tGOTO " ^ (string_of_location l)
+  | APPLY     -> "\tAPPLY"
+  | RETURN    -> "\tRETURN"
+  | HALT      -> "\tHALT"
+  | LABEL(l)  -> "LABEL " ^ l
+  | SWAP      -> "\tSWAP"
+  | POP       -> "\tPOP"
+  | DEREF     -> "\tDEREF"
+  | ASSIGN    -> "\tASSIGN"
+  | MK_CLOSURE (loc, n)
+              -> "MK_CLOSURE(" ^ (string_of_location loc) ^ ", " ^ (string_of_int n) ^ ")"
 
-let location_string_list_of_code = List.map location_string_list_of_instruction
+let string_list_of_code = List.map string_list_of_instruction
