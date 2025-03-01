@@ -1,6 +1,6 @@
 import { jargonStepsT } from "./InterpreterJargon";
 
-export type Code = [number, string][];
+export type Code = string[];
 export type CompilerResult =
   | { code: null; error: string }
   | { code: Code; error: null };
@@ -22,14 +22,17 @@ const parseResult = (result: string): CompilerResult => {
 };
 
 export const i2compile = (s: string): CompilerResult => {
+  //@ts-ignore
   return parseResult(slang.interp2Code(s));
 };
 
 export const i3compile = (s: string): CompilerResult => {
+  //@ts-ignore
   return parseResult(slang.interp3Code(s));
 };
 
 export const jargonCompile = (s: string): CompilerResult => {
+  //@ts-ignore
   return parseResult(slang.jargonCode(s));
 };
 
@@ -51,13 +54,5 @@ export const computeJargonSteps = (s: string): jargonStepsT => {
 };
 
 export function stringOfCode(c: Code): string {
-  return c.map(([_, s]) => s).join("\n");
-}
-
-export function highlightRowsForLocation(c: Code, l: number): number[] {
-  return c.reduce(
-    (linesToHighlight, codeLine, i) =>
-      codeLine[0] === l ? [i, ...linesToHighlight] : linesToHighlight,
-    [] as number[]
-  );
+  return c.join("\n");
 }

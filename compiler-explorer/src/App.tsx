@@ -10,9 +10,7 @@ import Interpreter3 from "./Interpreter3";
 import InterpreterJargon from "./InterpreterJargon";
 import "./App.css";
 import {
-  code,
   CompilerResult,
-  highlightRowsForLocation,
   i2compile,
   i3compile,
   interp,
@@ -68,23 +66,6 @@ function App() {
       line: 0,
     });
   const [sourceHighlight] = useDebounce(volatileSourceHighlight, 50);
-
-  const decorationsTargetHandler = (code: code) => (e: any, m: any) => {
-    if (!sourceHighlight.highlight) return [];
-
-    const linesToHighlight = highlightRowsForLocation(
-      code,
-      sourceHighlight.line
-    );
-
-    return linesToHighlight.map((l) => ({
-      range: new m.Range(l + 1, 1, l + 1, 1),
-      options: {
-        isWholeLine: true,
-        linesDecorationsClassName: "currentLineDec",
-      },
-    }));
-  };
 
   const decorationsSourceHandler = (e: any, m: any) => {
     if (!sourceHighlight.highlight) return [];
@@ -168,7 +149,6 @@ function App() {
             value={i2codeString}
             onMouseMove={onMouseMove(i2Result.code)}
             onMouseLeave={onMouseLeave}
-            decorations={decorationsTargetHandler(i2Result.code)}
             theme="vs-dark"
             options={{
               tabSize: 2,
@@ -191,7 +171,6 @@ function App() {
             value={i3codeString}
             onMouseMove={onMouseMove(i3Result.code)}
             onMouseLeave={onMouseLeave}
-            decorations={decorationsTargetHandler(i3Result.code)}
             height="86vh"
             theme="vs-dark"
             options={{
@@ -214,7 +193,6 @@ function App() {
             value={jargonCodeString}
             onMouseMove={onMouseMove(jargonResult.code)}
             onMouseLeave={onMouseLeave}
-            decorations={decorationsTargetHandler(jargonResult.code)}
             height="86vh"
             theme="vs-dark"
             options={{

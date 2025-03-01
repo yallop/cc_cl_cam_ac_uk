@@ -21,7 +21,7 @@
     Static
     Tests
     Past_to_ast)
-  (preprocess (pps ppx_yojson_conv))
+  (preprocess (pps ppx_deriving_yojson))
 )
 
 (executable

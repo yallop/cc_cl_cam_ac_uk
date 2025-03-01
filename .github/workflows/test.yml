@@ -20,7 +20,7 @@ jobs:
           - os: ubuntu-latest
             ocaml-compiler: 4.12.x
           - os: windows-latest
-            ocaml-compiler: 4.12.x
+            ocaml-compiler: 5.3.x
           - os: macos-latest
             ocaml-compiler: 4.12.x
 
@@ -31,13 +31,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      # - run: opam install dune ppx_yojson_conv js_of_ocaml js_of_ocaml-ppx
+      - run: opam install dune ppx_deriving_yojson js_of_ocaml js_of_ocaml-ppx
 
-      # - run: opam exec -- dune build
+      - run: opam exec -- dune build
 
       - name: Setup node
         uses: actions/setup-node@v2
