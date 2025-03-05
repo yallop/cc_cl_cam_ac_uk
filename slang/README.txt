@@ -9,33 +9,20 @@ Slang ( = Simple LANGuage), a fragment of the
 language L3 from 1B Semantics.   
 
 ===============================================
-Building 
+Building
 ===============================================
-Install ocamlbuild.  Then do either 
-
-  ocamlbuild slang.byte
-
-or
-
-  ocamlbuild slang.native  
-
-This will build the executable slang.byte (or 
-slang.native) as well as a directory _build 
-of compiled code. 
-
-To clean up, just do 
-
-  ocamlbuild -clean 
-
-Building slang.byte is quicker, but the runtime of 
-slang.native is faster.  However, you probably will 
-not notice the difference on this project. 
+See top level readme for build instructions.
 
 ===============================================
-Usage 
+Usage
 ===============================================
+You can run using the command:
 
-Usage: slang.byte [options] [<file>]
+  dune exec ./slang.exe
+
+See below for detailed usage documentation:
+
+Usage: slang.exe [options] [<file>]
 Options are:
   -V verbose front end
   -v verbose interpreter(s)
