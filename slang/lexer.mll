@@ -66,13 +66,13 @@ rule token = parse
   | "(*" { comment lexbuf; token lexbuf }
   | newline { next_line lexbuf; token lexbuf } 
   | eof { EOF }
-  | _ { Errors.complain ("Lexer : Illegal character " ^ (Char.escaped(Lexing.lexeme_char lexbuf 0)))
-}
+  | _ { Errors.complainf "ERROR Lexer : Illegal character %s" (Char.escaped(Lexing.lexeme_char lexbuf 0)) }
 
 and comment = parse
   | "*)" { () }
   | newline { next_line lexbuf; comment lexbuf }
   | "(*" {comment lexbuf; comment lexbuf }
+  | eof { Errors.complain "ERROR Lexer : Comment not terminated at" }
   | _ { comment lexbuf } 
       
 
