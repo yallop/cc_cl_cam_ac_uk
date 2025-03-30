@@ -72,7 +72,7 @@ and comment = parse
   | "*)" { () }
   | newline { next_line lexbuf; comment lexbuf }
   | "(*" {comment lexbuf; comment lexbuf }
-  | eof { Errors.complain "ERROR Lexer : Comment not terminated at" }
+  | eof { Errors.complain "ERROR Lexer : Comment not terminated" }
   | _ { comment lexbuf } 
       
 
