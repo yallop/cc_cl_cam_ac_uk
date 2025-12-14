@@ -4,6 +4,7 @@
 
 (library
  (name slanglib)
+ (public_name slang)
  (modules
   Front_end
   Lexer
