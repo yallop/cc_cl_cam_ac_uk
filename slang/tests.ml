@@ -1,4 +1,4 @@
-let test_dir = "tests"
+let test_dir = "slang/tests"
 
 let manifest : (string * string option) list =
   List.map
