@@ -1,30 +1,32 @@
 (ocamlyacc parser)
+
 (ocamllex lexer)
+
 (library
-  (name slanglib)
-  (modules
-    Front_end
-    Interp_0
-    Interp_1
-    Interp_2
-    Interp_3
-    Jargon
-    Jargon_to_x86
-    Ast
-    Past
-    Errors
-    Option
-    Free_vars
-    Pptree
-    Parser
-    Lexer
-    Static
-    Tests
-    Past_to_ast)
-  (preprocess (pps ppx_deriving_yojson))
-)
+ (name slanglib)
+ (modules
+  Front_end
+  Lexer
+  Parser
+  Ast
+  Past
+  Errors
+  Free_vars
+  Heap
+  Interp_0
+  Interp_1
+  Interp_2
+  Interp_3
+  Jargon
+  Jargon_to_x86
+  Value
+  Tests
+  Static
+  Option)
+ (preprocess
+  (pps ppx_deriving.show ppx_deriving_yojson)))
 
 (executable
-  (name slang)
-  (libraries slanglib)
-  (modules slang))
+ (name slang)
+ (libraries slanglib)
+ (modules slang))
