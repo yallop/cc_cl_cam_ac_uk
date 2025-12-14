@@ -1,43 +1,46 @@
-
 type var = string
 
-type oper = ADD | MUL | DIV | SUB | LT | AND | OR | EQB | EQI
+val pp_var : Format.formatter -> var -> unit
 
-type unary_oper = NEG | NOT | READ
+module Unary_op : sig
+  type t = Neg | Not | Read
 
-type expr =
-       | Unit
-       | Var of var
-       | Integer of int
-       | Boolean of bool
-       | UnaryOp of unary_oper * expr
-       | Op of expr * oper * expr
-       | If of expr * expr * expr
-       | Pair of expr * expr
-       | Fst of expr
-       | Snd of expr
-       | Inl of expr
-       | Inr of expr
-       | Case of expr * lambda * lambda
+  val to_fun : t -> 'a Value.t -> 'a Value.t
+  val pp : Format.formatter -> t -> unit
+end
 
-       | While of expr * expr
-       | Seq of expr list
-       | Ref of expr
-       | Deref of expr
-       | Assign of expr * expr
+module Binary_op : sig
+  type t = Add | Sub | Mul | Div | Lt | And | Or | Eqi | Eqb
 
-       | Lambda of lambda
-       | App of expr * expr
-       | LetFun of var * lambda * expr
-       | LetRecFun of var * lambda * expr
+  val to_fun : t -> 'a Value.t * 'a Value.t -> 'a Value.t
+  val pp : Format.formatter -> t -> unit
+end
 
-and lambda = Past.var * expr
+type t =
+  | Unit
+  | Var of var
+  | Integer of int
+  | Boolean of bool
+  | UnaryOp of Unary_op.t * t
+  | BinaryOp of t * Binary_op.t * t
+  | If of t * t * t
+  | Pair of t * t
+  | Fst of t
+  | Snd of t
+  | Inl of t
+  | Inr of t
+  | Case of t * lambda * lambda
+  | While of t * t
+  | Seq of t list
+  | Ref of t
+  | Deref of t
+  | Assign of t * t
+  | Lambda of lambda
+  | App of t * t
+  | LetFun of var * lambda * t
+  | LetRecFun of var * lambda * t
 
-(* printing *)
-val string_of_unary_oper : unary_oper -> string
-val string_of_oper : oper -> string
-val string_of_uop : unary_oper -> string
-val string_of_bop : oper -> string
-val print_expr : expr -> unit
-val eprint_expr : expr -> unit
-val string_of_expr : expr -> string
+and lambda = var * t
+
+val pp : Format.formatter -> t -> unit
+val pp_nice : Format.formatter -> t -> unit
