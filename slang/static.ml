@@ -146,13 +146,10 @@ let rec elab (env : env) (e : Past.t) : Ast.t * Past.Type.t =
   | LetFun (f, (x, t1, e2), t2, e) ->
       let e2' = elab_as ((x, t1) :: (f, Arrow (t1, t2)) :: env) e2 t2 in
       let e', t = elab ((f, Arrow (t1, t2)) :: env) e in
-      (LetRecFun (f, (x, e2'), e'), t)
-(* TODO: reimplement free variable check to use LecRec instead of LetRecFun *)
-(* let env' = (f, TEarrow (t1, t2)) :: env in let body' = elaborate ((x, t1) ::
-    env') body in let bound_vars_except_f = x :: List.filter_map (fun (z, _) ->
-    if z = f then None else Some x) env in let make = if List.mem f (fv
-    bound_vars_except_f body) then make_letrecfun else make_letfun in make loc f
-    x t1 t2 body' (elaborate env' e) *)
+      if List.mem f (Free_vars.free_vars [ x ] e2') then
+        (LetRecFun (f, (x, e2'), e'), t)
+      else
+        (LetFun (f, (x, e2'), e'), t)
 
 let translate (e : Past.t) =
   let e', _ = elab [] e in
