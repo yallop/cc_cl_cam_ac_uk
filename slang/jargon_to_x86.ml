@@ -64,8 +64,8 @@ let emit_x86 e =
   in
   let label l = output_string out_chan (l ^ ":\n") in
   let unary : Ast.Unary_op.t -> unit = function
-    | Not -> Errors.complain "NOT: not yet implemented in x86"
-    | Neg -> Errors.complain "NEG: not yet implemented in x86"
+    | Not -> cmd "xorq $1,(%rsp)" "NOT: flip 0<->1 \n"
+    | Neg -> cmd "negq (%rsp)" "NEG: negate top-of-stack \n"
     | Read ->
         cmd "popq %rdi" "BEGIN read, put arg in %rdi";
         cmd "movq $0,%rax" "signal no floating point args";
@@ -90,8 +90,12 @@ let emit_x86 e =
     label l2
   in
   let binary : Ast.Binary_op.t -> unit = function
-    | And -> Errors.complain "AND: not yet implemented in x86"
-    | Or -> Errors.complain "OR: not yet implemented in x86"
+    | And ->
+        cmd "popq %rax" "BEGIN and, pop top-of-stack to %rax";
+        cmd "andq %rax,(%rsp)" "END and, bitwise AND with top-of-stack \n"
+    | Or ->
+        cmd "popq %rax" "BEGIN or, pop top-of-stack to %rax";
+        cmd "orq %rax,(%rsp)" "END or, bitwise OR with top-of-stack \n"
     | Lt ->
         let l1 = new_label () in
         (* label for not < *)
