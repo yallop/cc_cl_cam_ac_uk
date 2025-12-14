@@ -8,4 +8,4 @@ let gcd (p : int * int) : int =
   else
     gcd (m - n, n)
 in
-gcd (?, ?)
+gcd (105, 75)

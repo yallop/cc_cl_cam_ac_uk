@@ -6,4 +6,4 @@ let fib (m : int) : int =
   else
     fib (m - 1) + fib (m - 2)
 in
-fib ?
+fib 10
