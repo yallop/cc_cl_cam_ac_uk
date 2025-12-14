@@ -8,8 +8,8 @@ maintainer: ["Timothy G. Griffin <tgg22@cam.ac.uk>"]
 authors: ["Timothy G. Griffin <tgg22@cam.ac.uk>"]
 license: "MIT"
 tags: ["compiler" "interpreter" "compiler construction" "cambridge" "ocaml"]
-homepage: "https://github.com/intgrah/cc_cl_cam_ac_uk"
-bug-reports: "https://github.com/intgrah/cc_cl_cam_ac_uk/issues"
+homepage: "https://github.com/yallop/cc_cl_cam_ac_uk"
+bug-reports: "https://github.com/yallop/cc_cl_cam_ac_uk/issues"
 depends: [
   "ocaml" {>= "4.14"}
   "dune" {>= "3.0" & >= "3.0"}
@@ -31,4 +31,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/intgrah/cc_cl_cam_ac_uk.git"
+dev-repo: "git+https://github.com/yallop/cc_cl_cam_ac_uk.git"

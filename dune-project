@@ -5,7 +5,7 @@
 (generate_opam_files true)
 
 (source
- (github intgrah/cc_cl_cam_ac_uk))
+ (github yallop/cc_cl_cam_ac_uk))
 
 (authors "Timothy G. Griffin <tgg22@cam.ac.uk>")
 
