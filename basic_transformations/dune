@@ -1,0 +1,21 @@
+(executable
+ (name ackermann)
+ (modules ackermann))
+
+(executable
+ (name cps)
+ (modules cps))
+
+(executable
+ (name dfc)
+ (modules dfc))
+
+(executable
+ (name expr_machine)
+ (modules expr_machine))
+
+(executable
+ (name fibonacci_machine)
+ (modules fibonacci_machine)
+ (preprocess
+  (pps ppx_deriving.show)))
