@@ -1,33 +1,17 @@
-(* Using IntMap to represent memory *)
-module IntMap : Map.S with type key = int
+type f
 
-type address = int
-
-type var = string
-
-type value =
-     | REF of address
-     | INT of int
-     | BOOL of bool
-     | UNIT
-     | PAIR of value * value
-     | INL of value
-     | INR of value
-     | CLOSURE of closure
-     | REC_CLOSURE of code
-
+type value = f Value.t
 and closure = code * env
-
 
 and instruction =
   | PUSH of value
-  | LOOKUP of var
-  | UNARY of Ast.unary_oper
-  | OPER of Ast.oper
+  | LOOKUP of Ast.var
+  | UNARY of Ast.Unary_op.t
+  | OPER of Ast.Binary_op.t
   | ASSIGN
   | SWAP
   | POP
-  | BIND of var
+  | BIND of Ast.var
   | FST
   | SND
   | DEREF
@@ -37,39 +21,24 @@ and instruction =
   | MK_INR
   | MK_REF
   | MK_CLOSURE of code
-  | MK_REC of var * code
+  | MK_REC of Ast.var * code
   | TEST of code * code
   | CASE of code * code
   | WHILE of code * code
 
 and code = instruction list
-
 and binding = Ast.var * value
-
 and env = binding list
 
 type env_or_value = EV of env | V of value
+type stack = env_or_value list
+type state = { code : code; stack : stack; heap : value Heap.t }
 
-type env_value_stack = env_or_value list
-
-(* array of referenced values together with next unallocated address *)
-type state = value IntMap.t * int
-
-type interp_state = code * env_value_stack * state
-
-val initial_state : state
-
-val initial_env : env_value_stack
-
-val step :  interp_state -> interp_state
-
-val compile : Ast.expr -> code
-
-val driver : int -> interp_state -> value * state
-
-val interpret : Ast.expr -> value * state
-
-val string_of_instruction : instruction -> string
-val string_of_value : value -> string
-val string_of_env_or_value : env_or_value -> string
-val string_of_code : code -> string
+val step : state -> state
+val compile : Ast.t -> code
+val interpret : Ast.t -> value
+val pp_instruction : Format.formatter -> instruction -> unit
+val pp_value : Format.formatter -> value -> unit
+val show_value : value -> string
+val pp_env_or_value : Format.formatter -> env_or_value -> unit
+val pp_code : Format.formatter -> code -> unit
