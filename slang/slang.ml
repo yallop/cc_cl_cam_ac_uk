@@ -85,10 +85,10 @@ let interpreters =
     (Option.use_i4 && Option.show_compiled, i4cc, "Jargon, compiled code");
   ]
   |> List.filter_map (fun (cond, action, description) ->
-         if cond then
-           Some (action, description)
-         else
-           None)
+      if cond then
+        Some (action, description)
+      else
+        None)
 
 let show_output describe string_out =
   if not Option.run_tests then (
@@ -125,7 +125,8 @@ let process_input (file, expected) =
 
 let () =
   if Option.run_tests then
-    try List.iter process_input Tests.manifest
+    try
+      List.iter process_input Tests.manifest
     with Errors.Error s -> fatal_error "tests/" "Test.get_all_tests" s
   else
     process_input (Option.infile, None)

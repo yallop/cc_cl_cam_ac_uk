@@ -139,7 +139,9 @@ let rand depth =
     if depth = 0 then
       Integer (Random.int 100 - 50)
     else
-      match Random.int 10 with
+      match
+        Random.int 10
+      with
       | 0 -> UnaryOp (Neg, rand_int (depth - 1))
       | 1 -> BinaryOp (rand_int (depth - 1), Add, rand_int (depth - 1))
       | 2 -> BinaryOp (rand_int (depth - 1), Sub, rand_int (depth - 1))
@@ -156,7 +158,9 @@ let rand depth =
     if depth = 0 then
       Boolean (Random.bool ())
     else
-      match Random.int 7 with
+      match
+        Random.int 7
+      with
       | 0 -> Boolean (Random.bool ())
       | 1 -> UnaryOp (Not, rand_bool (depth - 1))
       | 2 -> BinaryOp (rand_bool (depth - 1), Or, rand_bool (depth - 1))

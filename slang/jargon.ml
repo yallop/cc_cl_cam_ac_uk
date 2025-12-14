@@ -269,7 +269,9 @@ let allocate n vm =
   if hp1 + n < vm.heap_bound then
     (hp1, { vm with hp = vm.hp + n })
   else
-    match invoke_garbage_collection vm with
+    match
+      invoke_garbage_collection vm
+    with
     | None -> Errors.complain "allocate : heap exhausted"
     | Some vm2 ->
         if vm2.hp + n < vm2.heap_bound then
