@@ -111,7 +111,7 @@ let rec apply_tag_list_cnt = function
   | ((SUB2 m) :: cnt, a) -> fib_cps_dfc_tags(m - 2, (PLUS a):: cnt)
   | ((PLUS a) :: cnt, b) -> apply_tag_list_cnt (cnt, a + b)
 
-(* fib_cps_dfc_tags : (tag_list_cnt * int) -> int *) 
+(* fib_cps_dfc_tags : (int * tag_list_cnt) -> int *) 
 and fib_cps_dfc_tags (m, cnt) =
     if m = 0 
     then apply_tag_list_cnt(cnt, 1) 
@@ -206,7 +206,7 @@ let print_state n (t, m, cnt) =
 (* set to false if you don't want to watch the machine's transitions ... *) 
 let verbose = ref true
 
-(* eval_steps : state -> int 
+(* eval_steps : int -> state 
 
    The Ocaml compiler probably compiles this recursive function 
    into iteration (no stack).  Of course we have build "the stack" 
@@ -227,6 +227,7 @@ let fibs m = [fib m; fib_1 m; fib_2 m; fib_3 m; fib_4 m; fib_5 m]
 
 
 (* Here is a trace of fib_5 6. 
+   Note that the head of the stack is on the right, whereas it was on the left in the notes.
 
 fib_5 6;;
 
