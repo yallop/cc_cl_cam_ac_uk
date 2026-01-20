@@ -1,6 +1,5 @@
 open Slanglib
 open Jargon
-open Ast
 
 type node_tp = H_INT | H_BOOL | H_UNIT | H_CI | H_HI | H_HEADER
 [@@deriving yojson]
@@ -21,8 +20,7 @@ type edge = { source : string; target : string; label : string; tp : arrow_tp }
 
 type graph = node list * edge list [@@deriving yojson]
 
-let string_of_heap_type tp =
-  match tp with
+let string_of_heap_type = function
   | HT_PAIR -> "Pair"
   | HT_INL -> "InL"
   | HT_INR -> "InR"
@@ -161,19 +159,22 @@ let string_lists_of_vm_state vm_state =
       let heap_list = Array.to_list (Array.sub heap 0 hp) in
       {
         stack =
-          List.map Jargon.string_of_stack_item
+          List.map
+            (Format.asprintf "%a" Jargon.pp_stack_item)
             (Array.to_list (Array.sub stack 0 sp));
-        heap = List.map Jargon.string_of_heap_item heap_list;
+        heap = List.map (Format.asprintf "%a" Jargon.pp_heap_item) heap_list;
         heap_graph = graph_of_heap heap_list;
         sp;
         fp;
         cp;
         hp;
-        status = Jargon.string_of_status status;
+        status = Format.asprintf "%a" Jargon.pp_status_code status;
       }
 
 let string_list_of_code vm_state =
-  List.map Jargon.string_of_instruction (Array.to_list vm_state.code)
+  List.map
+    (Format.asprintf "%a" Jargon.pp_instruction)
+    (Array.to_list vm_state.code)
 
 let rec driver n vm =
   let state = string_lists_of_vm_state vm in
@@ -190,28 +191,28 @@ let steps exp =
   (string_list_of_code vm, driver 1 vm)
 
 let string_list_of_instruction : instruction -> string = function
-  | UNARY op -> "\tUNARY " ^ string_of_uop op
-  | OPER op -> "\tOPER " ^ string_of_bop op
+  | UNARY op -> Format.asprintf "\tUNARY %a" Ast.Unary_op.pp op
+  | OPER op -> Format.asprintf "\tOPER %a" Ast.Binary_op.pp op
   | MK_PAIR -> "\tMK_PAIR"
   | FST -> "\tFST"
   | SND -> "\tSND"
   | MK_INL -> "\tMK_INL"
   | MK_INR -> "\tMK_INR"
   | MK_REF -> "\tMK_REF"
-  | PUSH v -> "\tPUSH " ^ string_of_stack_item v
-  | LOOKUP p -> "\tLOOKUP " ^ string_of_value_path p
-  | TEST l -> "\tTEST " ^ string_of_location l
-  | CASE l -> "\tCASE " ^ string_of_location l
-  | GOTO l -> "\tGOTO " ^ string_of_location l
+  | PUSH v -> Format.asprintf "\tPUSH %a" Jargon.pp_stack_item v
+  | LOOKUP p -> Format.asprintf "\tLOOKUP %a" Jargon.pp_value_path p
+  | TEST l -> Format.asprintf "\tTEST %a" Jargon.pp_location l
+  | CASE l -> Format.asprintf "\tCASE %a" Jargon.pp_location l
+  | GOTO l -> Format.asprintf "\tGOTO %a" Jargon.pp_location l
   | APPLY -> "\tAPPLY"
   | RETURN -> "\tRETURN"
   | HALT -> "\tHALT"
-  | LABEL l -> "LABEL " ^ l
+  | LABEL l -> Format.asprintf "LABEL %s" l
   | SWAP -> "\tSWAP"
   | POP -> "\tPOP"
   | DEREF -> "\tDEREF"
   | ASSIGN -> "\tASSIGN"
   | MK_CLOSURE (loc, n) ->
-      "MK_CLOSURE(" ^ string_of_location loc ^ ", " ^ string_of_int n ^ ")"
+      Format.asprintf "MK_CLOSURE(%a, %d)" Jargon.pp_location loc n
 
 let string_list_of_code = List.map string_list_of_instruction

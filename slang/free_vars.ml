@@ -1,26 +1,15 @@
-open Ast
-
-let rec inlist x = function
-  | [] -> false
-  | y :: rest ->
-      if x = y then
-        true
-      else
-        inlist x rest
-
-(* free_vars (bvars, e) returns a
-    list, with no duplicates, of all free variables
-    of e that are not in the list bvars.
-*)
-let free_vars (bvars, exp) =
-  let rec aux bound free = function
+(** [free_vars bound e] returns a list, with no duplicates, of all free
+    variables of [e] that are not in the list [bound]. *)
+let free_vars (bound : Ast.var list) (exp : Ast.t) : Ast.var list =
+  let rec aux (bound : Ast.var list) (free : Ast.var list) :
+      Ast.t -> Ast.var list = function
     | Var x ->
-        if inlist x bound || inlist x free then
+        if List.mem x bound || List.mem x free then
           free
         else
           x :: free
     | UnaryOp (_, e) -> aux bound free e
-    | Op (e1, _, e2) -> aux bound (aux bound free e1) e2
+    | BinaryOp (e1, _, e2) -> aux bound (aux bound free e1) e2
     | If (e1, e2, e3) -> aux bound (aux bound (aux bound free e1) e2) e3
     | Pair (e1, e2) -> aux bound (aux bound free e1) e2
     | App (e1, e2) -> aux bound (aux bound free e1) e2
@@ -40,4 +29,4 @@ let free_vars (bvars, exp) =
     | Seq (e :: rest) -> aux bound (aux bound free e) (Seq rest)
     | _ -> free
   and lambda bound free (x, e) = aux (x :: bound) free e in
-  aux bvars [] exp
+  aux bound [] exp
