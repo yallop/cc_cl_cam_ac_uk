@@ -125,7 +125,8 @@ let process_input (file, expected) =
 
 let () =
   if Option.run_tests then
-    try List.iter process_input (Tests.get_all_tests ())
+    try
+      List.iter process_input Tests.manifest
     with Errors.Error s -> fatal_error "tests/" "Test.get_all_tests" s
   else
     process_input (Option.infile, None)
