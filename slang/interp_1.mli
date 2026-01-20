@@ -1,18 +1,16 @@
-
 type expr_i1 = Ast.expr
-
 type address = int
 
 type value =
-     | REF of address
-     | INT of int
-     | BOOL of bool
-     | UNIT
-     | PAIR of value * value
-     | INL of value
-     | INR of value
-     | REC_CLOSURE of closure
-     | CLOSURE of closure
+  | REF of address
+  | INT of int
+  | BOOL of bool
+  | UNIT
+  | PAIR of value * value
+  | INL of value
+  | INR of value
+  | REC_CLOSURE of closure
+  | CLOSURE of closure
 
 and closure = Ast.var * expr_i1 * env
 
@@ -37,22 +35,16 @@ and continuation_action =
   | APPLY of value
   | ARG of expr_i1 * env
 
-and continuation = continuation_action  list
-
+and continuation = continuation_action list
 and binding = Ast.var * value
-
 and env = binding list
 
 type state =
-   | INSPECT of expr_i1 * env * continuation
-   | COMPUTE of continuation * value
+  | INSPECT of expr_i1 * env * continuation
+  | COMPUTE of continuation * value
 
 val step : state -> state
-
 val driver : int -> state -> value
-
 val eval : expr_i1 * env -> value
-
 val interpret : Ast.expr -> value
-
 val string_of_value : value -> string
