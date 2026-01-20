@@ -1,4 +1,4 @@
 exception Error of string
 
 let complain s = raise (Error s)
-let complainf fmt = Format.kasprintf complain fmt
+let complainf ppf = Format.kasprintf complain ppf

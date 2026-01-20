@@ -1,56 +1,67 @@
-(*
-   The Parsed AST
-*)
 type var = string
-type loc = Lexing.position
 
-type type_expr =
-  | TEint
-  | TEbool
-  | TEunit
-  | TEref of type_expr
-  | TEarrow of type_expr * type_expr
-  | TEproduct of type_expr * type_expr
-  | TEunion of type_expr * type_expr
+module Unary_op : sig
+  type t = Neg | Not
 
-type oper = ADD | MUL | DIV | SUB | LT | AND | OR | EQ | EQB | EQI
-type unary_oper = NEG | NOT
+  val pp : Format.formatter -> t -> unit
+end
 
-type expr =
-  | Unit of loc
-  | What of loc
-  | Var of loc * var
-  | Integer of loc * int
-  | Boolean of loc * bool
-  | UnaryOp of loc * unary_oper * expr
-  | Op of loc * expr * oper * expr
-  | If of loc * expr * expr * expr
-  | Pair of loc * expr * expr
-  | Fst of loc * expr
-  | Snd of loc * expr
-  | Inl of loc * type_expr * expr
-  | Inr of loc * type_expr * expr
-  | Case of loc * expr * lambda * lambda
-  | While of loc * expr * expr
-  | Seq of loc * expr list
-  | Ref of loc * expr
-  | Deref of loc * expr
-  | Assign of loc * expr * expr
-  | Lambda of loc * lambda
-  | App of loc * expr * expr
-  | Let of loc * var * type_expr * expr * expr
-  | LetFun of loc * var * lambda * type_expr * expr
-  | LetRecFun of loc * var * lambda * type_expr * expr
+module Binary_op : sig
+  type t = Add | Sub | Mul | Div | Lt | And | Or | Eq
 
-and lambda = var * type_expr * expr
+  val pp : Format.formatter -> t -> unit
+end
 
-val loc_of_expr : expr -> loc
-val string_of_loc : loc -> string
+module Loc : sig
+  type t = { line : int; column : int }
 
-(* printing *)
-val string_of_unary_oper : unary_oper -> string
-val string_of_oper : oper -> string
-val string_of_type : type_expr -> string
-val string_of_expr : expr -> string
-val print_expr : expr -> unit
-val eprint_expr : expr -> unit
+  val of_position : Lexing.position -> t
+  val pp : Format.formatter -> t -> unit
+  val pp_nice : Format.formatter -> t -> unit
+end
+
+module Type : sig
+  type t =
+    | Int
+    | Bool
+    | Unit
+    | Ref of t
+    | Arrow of t * t
+    | Product of t * t
+    | Sum of t * t
+
+  val pp : Format.formatter -> t -> unit
+  val pp_nice : Format.formatter -> t -> unit
+end
+
+type t = { loc : Loc.t; expr : expr }
+
+and expr =
+  | Unit
+  | What
+  | Var of var
+  | Integer of int
+  | Boolean of bool
+  | UnaryOp of Unary_op.t * t
+  | BinaryOp of t * Binary_op.t * t
+  | If of t * t * t
+  | Pair of t * t
+  | Fst of t
+  | Snd of t
+  | Inl of Type.t * t
+  | Inr of Type.t * t
+  | Case of t * lambda * lambda
+  | While of t * t
+  | Seq of t list
+  | Ref of t
+  | Deref of t
+  | Assign of t * t
+  | Lambda of lambda
+  | App of t * t
+  | Let of var * Type.t * t * t
+  | LetFun of var * lambda * Type.t * t
+
+and lambda = var * Type.t * t
+
+val pp : Format.formatter -> t -> unit
+val pp_nice : Format.formatter -> t -> unit

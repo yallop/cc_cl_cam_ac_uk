@@ -1,4 +1,3 @@
-open Ast
 open Jargon
 
 (**************************************
@@ -7,49 +6,46 @@ Computer Laboratory
 University of Cambridge
 Timothy G. Griffin (tgg22@cam.ac.uk)
 
-This file contains a VERY simple translation of Jargon to x86 assembler. 
-The generated code attempts to closely mimic the Jargon virtual machine. 
-Calling slang with the -i4x86 option and file foo.slang  will generate 
-a foo.s file of assembler (with comments!), and a compiled version 
+This file contains a VERY simple translation of Jargon to x86 assembler.
+The generated code attempts to closely mimic the Jargon virtual machine.
+Calling slang with the -i4x86 option and file foo.slang  will generate
+a foo.s file of assembler (with comments!), and a compiled version
 "foo" that you can run from the command line (foo.s is compiled and
-linked with the runtime system (runtime/c_runtime.c). 
+linked with the runtime system (runtime/c_runtime.c).
 
-Thanks for help from Nathan Corbyn who implemented 
-rusty_slang here https://github.com/doctorn/rusty_slang. 
+Thanks for help from Nathan Corbyn who implemented
+rusty_slang here https://github.com/doctorn/rusty_slang.
 
-A few comments on the code below: 
+A few comments on the code below:
 
--- No optimisations have been implemented. 
--- No garbage collection is implemented. Heap allocated 
-   records do not yet have headers. 
--- runtime system only prints out integers correctly. 
-   This is related to having no headers. Discuss. 
--- the scratch register %r11 is used to hold a pointer to 
-   the heap, which is passed in by the runtime system. 
--- register %rax is being used for scratch, not really as an accumulator. 
+-- No optimisations have been implemented.
+-- No garbage collection is implemented. Heap allocated
+   records do not yet have headers.
+-- runtime system only prints out integers correctly.
+   This is related to having no headers. Discuss.
+-- the scratch register %r11 is used to hold a pointer to
+   the heap, which is passed in by the runtime system.
+-- register %rax is being used for scratch, not really as an accumulator.
 -- Close inspection of generated code will reveal why it would be good idea
-   to use %rax as an accumulator. That is, always have to top-of-stack in %rax. 
--- The only function calls/returns that follow the C calling 
+   to use %rax as an accumulator. That is, always have to top-of-stack in %rax.
+-- The only function calls/returns that follow the C calling
    conventions are those that interact with the runtime system
-   (the "alloc" function is called to allocate records on the heap, 
+   (the "alloc" function is called to allocate records on the heap,
    and the main function "giria" is called from the runtime system).
--- "giria" means "slang" in Portuguese. 
+-- "giria" means "slang" in Portuguese.
 
  *****************************************)
-let complain = Errors.complain
 
 let emit_x86 e =
   (* strip ".slang" off of filename *)
-  let base_name =
-    String.sub Option.infile 0 (String.length Option.infile - 6)
-  in
+  let base_name = Filename.remove_extension Option.infile in
   let out_chan = open_out (base_name ^ ".s") in
   let tab c =
     output_string out_chan ("\t" ^ c ^ "\n")
     (* It would be nice to print source locations next to each line.
-		   Exercise: pass the location data while maintaining a semblence
-			 of polymorphism. 
-			 
+		   Exercise: pass the location data while maintaining a semblance
+			 of polymorphism.
+			
 			 *cough* typeclasses *cough*
 		*)
   in
@@ -67,10 +63,10 @@ let emit_x86 e =
     output_string out_chan ("\t" ^ c ^ tab_string ^ "# " ^ comment ^ "\n")
   in
   let label l = output_string out_chan (l ^ ":\n") in
-  let unary = function
-    | NOT -> complain "NOT: not yet implemented in x86"
-    | NEG -> complain "NEG: not yet implemented in x86"
-    | READ ->
+  let unary : Ast.Unary_op.t -> unit = function
+    | Not -> Errors.complain "NOT: not yet implemented in x86"
+    | Neg -> Errors.complain "NEG: not yet implemented in x86"
+    | Read ->
         cmd "popq %rdi" "BEGIN read, put arg in %rdi";
         cmd "movq $0,%rax" "signal no floating point args";
         cmd "pushq %r11" "%r11 is caller-saved ";
@@ -93,10 +89,10 @@ let emit_x86 e =
     cmd "pushq $0" "END EQ, push false \n";
     label l2
   in
-  let binary = function
-    | AND -> complain "AND: not yet implemented in x86"
-    | OR -> complain "OR: not yet implemented in x86"
-    | LT ->
+  let binary : Ast.Binary_op.t -> unit = function
+    | And -> Errors.complain "AND: not yet implemented in x86"
+    | Or -> Errors.complain "OR: not yet implemented in x86"
+    | Lt ->
         let l1 = new_label () in
         (* label for not < *)
         let l2 = new_label () in
@@ -110,20 +106,20 @@ let emit_x86 e =
         label l1;
         cmd "pushq $0" "END EQI, push false \n";
         label l2
-    | EQB -> eq ()
-    | EQI -> eq ()
-    | ADD ->
+    | Eqb -> eq ()
+    | Eqi -> eq ()
+    | Add ->
         cmd "popq %rax" "BEGIN add, pop top-of-stack to %rax";
         cmd "addq %rax,(%rsp)" "END add, add %rax to top-of-stack \n"
-    | SUB ->
+    | Sub ->
         cmd "popq %rax" "BEGIN sub, pop top-of-stack to %rax";
         cmd "subq %rax,(%rsp)" "END sub, subtract %rax from top-of-stack \n"
-    | MUL ->
+    | Mul ->
         cmd "popq %rax" "BEGIN mul, pop arg 1 to %rax";
         cmd "popq %r10" "pop arg 2 to %r10";
         cmd "imulq %r10" "multiply %r10 by %rax, result in %rax";
         cmd "pushq %rax" "END mul, push result \n"
-    | DIV ->
+    | Div ->
         cmd "popq %r10" "BEGIN div, , pop top-of-stack to %r10";
         cmd "popq %rax" "pop divisor into %rax";
         cmd "cqto" "prepare for div (read x86 docs!)";
@@ -190,7 +186,7 @@ let emit_x86 e =
          need to multiply by 8 (number of bytes in 64-bit word *)
     let j = string_of_int (8 * i) in
     cmd
-      ("movq " ^ j ^ "(%rbp)" ^ ",%r10")
+      ("movq " ^ j ^ "(%rbp),%r10")
       "BEGIN stack lookup, index off of base pointer";
     cmd "pushq %r10" "END stack lookup, push value \n"
   in
@@ -198,7 +194,7 @@ let emit_x86 e =
     let j = string_of_int (8 * i) in
     cmd "movq 8(%rbp), %rax" "BEGIN heap lookup, copy closure pointer to %rax";
     cmd
-      ("movq " ^ j ^ "(%rax)" ^ ",%r10")
+      ("movq " ^ j ^ "(%rax),%r10")
       ("put closue value at index " ^ string_of_int i ^ " in scratch register");
     cmd "pushq %r10" "END heap lookup, push value \n"
   in
@@ -296,17 +292,17 @@ let emit_x86 e =
     | PUSH (STACK_INT i) -> cmd ("pushq $" ^ string_of_int i) "push int \n"
     | PUSH (STACK_BOOL true) -> cmd "pushq $1" "push true \n"
     | PUSH (STACK_BOOL false) -> cmd "pushq $0" "push false \n"
-    | PUSH STACK_UNIT -> cmd "pushq $0" "push false \n"
+    | PUSH STACK_UNIT -> cmd "pushq $0" "push unit \n"
     | PUSH (STACK_HI _) ->
-        complain
+        Errors.complain
           "Internal Error : Jargon code never explicitly pushes stack pointer"
     | PUSH (STACK_RA _) ->
-        complain
+        Errors.complain
           "Internal Error : Jargon code never explicitly pushes return address"
     | PUSH (STACK_FP _) ->
-        complain
+        Errors.complain
           "Internal Error : Jargon code never explicitly pushes frame pointer"
-    | HALT -> complain "HALT found in Jargon code from Jargon.comp"
+    | HALT -> Errors.complain "HALT found in Jargon code from Jargon.comp"
   in
   let rec emitl = function
     | [] -> ()
@@ -318,7 +314,7 @@ let emit_x86 e =
     if 0 = Sys.command s then
       ()
     else
-      complain ("command failed: " ^ s)
+      Errors.complain ("command failed: " ^ s)
   in
   let defs, cl =
     comp [] e

@@ -1,5 +1,3 @@
-open Past
+exception Type_error of { loc : Past.Loc.t; message : string }
 
-type env = (var * type_expr) list
-
-val infer : env -> expr -> expr * type_expr
+val translate : Past.t -> Ast.t

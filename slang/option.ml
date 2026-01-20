@@ -1,6 +1,5 @@
-(*
-   parse command line options and args
-*)
+(* Parse command line options and args *)
+
 let infile = ref ""
 let verbose = ref false
 let verbose_front = ref false
@@ -25,7 +24,7 @@ let set_infile f = infile := f
 let stack_max = ref 1000
 let heap_max = ref 1000
 
-let option_spec =
+let option_spec : (string * Arg.spec * string) list =
   [
     ("-V", Arg.Set verbose_front, "verbose front end");
     ("-v", Arg.Set verbose, "verbose interpreter(s)");
@@ -53,11 +52,13 @@ let option_spec =
 
 let usage_msg = "Usage: slang.byte [options] [<file>]\nOptions are:"
 
-(* This does the parsing and *)
+(* This does the parsing and sets the options *)
+
 let () = Arg.parse option_spec set_infile usage_msg
 
-(* set immutable versions of the options now that they have been parsed 
- * Note: this is only to make the interface cleaner. *)
+(* Set immutable versions of the options now that they have been parsed
+   Note: this is only to make the interface cleaner. *)
+
 let infile = !infile
 let verbose = !verbose
 let verbose_front = !verbose_front
