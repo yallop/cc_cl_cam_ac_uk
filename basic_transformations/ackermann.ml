@@ -2,7 +2,7 @@
 
 To use: fire up ocaml and then
 
-    #use "ackermann.ml";; 
+    #use "ackermann.ml";;
 
 *)
 
@@ -28,8 +28,7 @@ let rec ack_cps (x, y, cnt) =
 
 let ack_2 (x, y) = ack_cps (x, y, fun x -> x)
 
-(* Now "defunctionalise" and represent continuations as lists  *)
-
+(** Now "defunctionalise" and represent continuations as lists *)
 let rec ack_cps_dfc (x, y, cnt) =
   if x = 0 then
     apply_cnt (cnt, y + 1)
@@ -44,12 +43,10 @@ and apply_cnt = function
 
 let ack_3 (x, y) = ack_cps_dfc (x, y, [])
 
-(* Replace mutual recursion with a two-state "machine." *)
-
+(** Replace mutual recursion with a two-state "machine." *)
 type state = ACK of int * int * int list | APP of int list * int
 
-(* first, some pretty printing for states .... *)
-
+(** First, some pretty printing for states ... *)
 let rec string_of_int_list_aux = function
   | [] -> ""
   | [ t ] -> string_of_int t
@@ -59,36 +56,26 @@ let string_of_int_list l = "[" ^ string_of_int_list_aux l ^ "]"
 
 let print_state n = function
   | APP (cnt, m) ->
-      print_string
-        (string_of_int n ^ " " ^ "APP\t\t" ^ string_of_int m
-       ^ "\t"
-         (* reverse stack so that it grows to the right, shrinks to the left *)
-        ^ string_of_int_list (List.rev cnt)
-        ^ "\n")
+      Format.printf "%d APP\t\t%d\t%s\n" n m (string_of_int_list (List.rev cnt))
   | ACK (x, y, cnt) ->
-      print_string
-        (string_of_int n ^ " " ^ "ACK\t" ^ string_of_int x ^ "\t"
-       ^ string_of_int y
-       ^ "\t"
-         (* reverse stack so that it grows to the right, shrinks to the left *)
-        ^ string_of_int_list (List.rev cnt)
-        ^ "\n")
-(* now, the machine *)
+      Format.printf "%d ACK\t%d\t%d\t%s\n" n x y
+        (string_of_int_list (List.rev cnt))
 
+(** Now, the machine *)
 let step = function
+  | APP ([], _) -> failwith "Invalid state"
   | ACK (0, y, cnt) -> APP (cnt, y + 1)
   | ACK (x, 0, cnt) -> ACK (x - 1, 1, cnt)
   | ACK (x, y, cnt) -> ACK (x, y - 1, x :: cnt)
   | APP (x :: cnt, a) -> ACK (x - 1, a, cnt)
-  | s -> s (* for APP([], x) case *)
 
 let rec driver n state =
-  let _ = print_state n state in
+  print_state n state;
   match state with APP ([], v) -> v | s -> driver (n + 1) (step s)
 
 let ack_4 (x, y) = driver 0 (ACK (x, y, []))
 
-(* here is the output from ack_4(3,2)
+(* Here is the output from ack_4 (3, 2)
 
 0 ACK	3	2	[]
 1 ACK	3	1	[3]
