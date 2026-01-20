@@ -3,7 +3,7 @@ Compiler Construction 2016
 Computer Laboratory 
 University of Cambridge 
 Timothy G. Griffin (tgg22@cam.ac.uk) 
-*****************************************) 
+*****************************************)
 
 (* The "defunctionalisation" (dfc) transformation 
    replaces functions with elements in a data structure. 
@@ -39,43 +39,32 @@ Timothy G. Griffin (tgg22@cam.ac.uk)
 
    where each ei' = dfc(ei). 
 
-*) 
+*)
 
-(* First a very simple example *) 
+(* First a very simple example *)
 
+(* sum : 'a * 'a * ('a -> int) -> int *)
+let sum (a, b, f) = f a + f b
 
-(* sum : 'a * 'a * ('a -> int) -> int *) 
-let sum (a, b, f) = (f a) + (f b) 
+(* test : int * int -> int *)
+let test (x, y) = sum (x, y, fun z -> z * y) * sum (x, y, fun w -> (w * x) + y)
 
-(* test : int * int -> int *) 
-let test (x, y) = 
-      (sum (x, y, fun z -> z * y))
-    * (sum (x, y, fun w -> (w * x) + y))
-
-(* after the dfc transformation : *) 
+(* after the dfc transformation : *)
 
 type funs = FUN1 of int | FUN2 of int * int
 
-(* apply_funs : funs * int -> int *) 
-let apply_funs = function 
-  | (FUN1 y,     z) -> z * y
-  | (FUN2(x, y), w) -> (w * x) + y
+(* apply_funs : funs * int -> int *)
+let apply_funs = function FUN1 y, z -> z * y | FUN2 (x, y), w -> (w * x) + y
 
-(* sum_dfc :  int * int * funs -> int *) 
-let sum_dfc (a, b, f) = apply_funs(f, a) + apply_funs(f, b) 
+(* sum_dfc :  int * int * funs -> int *)
+let sum_dfc (a, b, f) = apply_funs (f, a) + apply_funs (f, b)
 
-(* test_dfc : int * int -> int *) 
-let test_dfc (x, y) = (sum_dfc (x, y, FUN1 y)) * (sum_dfc (x, y, FUN2(x,y)))
-      
+(* test_dfc : int * int -> int *)
+let test_dfc (x, y) = sum_dfc (x, y, FUN1 y) * sum_dfc (x, y, FUN2 (x, y))
+
 (* Observation. 
    We have specialized sum_dfc to a version that only calls 
    the functions used by test, represented now as elements of 
    the datastructure funs.  Thus the type of sum_dfc is not 
    as general as that of sum. 
-*)     
-
-
-
-
-
-
+*)

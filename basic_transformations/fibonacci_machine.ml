@@ -1,4 +1,3 @@
-
 (* We are going to use some of the basic 
    transformation described in this directory to 
    derive the Fibonacci Machine! 
@@ -24,103 +23,100 @@
    and type 
        #use "fibonacci_machine.ml";; 
 
-*) 
+*)
 
 (* start with the standard definition 
 
    fib : int -> int 
-*) 
+*)
 let rec fib m =
-    if m = 0 
-    then 1 
-    else if m = 1 
-         then 1 
-         else fib(m - 1) + fib (m - 2) 
-
+  if m = 0 then
+    1
+  else if m = 1 then
+    1
+  else
+    fib (m - 1) + fib (m - 2)
 
 (* Now, apply cps transform. 
 
    fib_cps : (int *(int -> int)) -> int 
-*) 
+*)
 let rec fib_cps (m, cnt) =
-    if m = 0 
-    then cnt 1 
-    else if m = 1 
-            then cnt 1 
-            else fib_cps(m -1,  fun a -> fib_cps(m - 2 , fun b  -> cnt (a + b)))
-
+  if m = 0 then
+    cnt 1
+  else if m = 1 then
+    cnt 1
+  else
+    fib_cps (m - 1, fun a -> fib_cps (m - 2, fun b -> cnt (a + b)))
 
 (* Here is a version using lets, not "lambdas" 
-*) 
+*)
 let rec fib_cps_v2 (m, cnt) =
-    if m = 0 
-    then cnt 1 
-    else if m = 1 
-         then cnt 1 
-         else let cnt2 a b = cnt (a + b) in 
-              let cnt1 a = fib_cps_v2(m - 2, cnt2 a) 
-              in fib_cps_v2(m - 1, cnt1)
+  if m = 0 then
+    cnt 1
+  else if m = 1 then
+    cnt 1
+  else
+    let cnt2 a b = cnt (a + b) in
+    let cnt1 a = fib_cps_v2 (m - 2, cnt2 a) in
+    fib_cps_v2 (m - 1, cnt1)
 
-(* id : int -> int *) 
-let id (x : int)  = x 
+(* id : int -> int *)
+let id (x : int) = x
 
 (*   fib_1 : int -> int *)
-let fib_1 m = fib_cps_v2(m, id)
+let fib_1 m = fib_cps_v2 (m, id)
 
-(* Now apply defunctionalization (dfc). *) 
+(* Now apply defunctionalization (dfc). *)
 
-(* datatype to represent continuations *) 
-type cnt = 
-  | ID
-  | CNT1 of int * cnt 
-  | CNT2 of int * cnt 
+(* datatype to represent continuations *)
+type cnt = ID | CNT1 of int * cnt | CNT2 of int * cnt
 
 (* apply_cnt : cnt * int -> int *)
-let rec apply_cnt = function 
-  | (ID, a)     -> a 
-  | (CNT1 (m, cnt), a) -> fib_cps_dfc(m - 2, CNT2 (a, cnt))
-  | (CNT2 (a, cnt), b) -> apply_cnt (cnt, a + b)
+let rec apply_cnt = function
+  | ID, a -> a
+  | CNT1 (m, cnt), a -> fib_cps_dfc (m - 2, CNT2 (a, cnt))
+  | CNT2 (a, cnt), b -> apply_cnt (cnt, a + b)
 
-(*  fib_cps_dfc : (cnt * int) -> int *) 
+(*  fib_cps_dfc : (cnt * int) -> int *)
 and fib_cps_dfc (m, cnt) =
-    if m = 0 
-    then apply_cnt(cnt, 1) 
-    else if m = 1 
-         then apply_cnt(cnt, 1) 
-         else fib_cps_dfc(m -1, CNT1(m, cnt)) 
+  if m = 0 then
+    apply_cnt (cnt, 1)
+  else if m = 1 then
+    apply_cnt (cnt, 1)
+  else
+    fib_cps_dfc (m - 1, CNT1 (m, cnt))
 
 (*  fib_2 : int -> int *)
-let fib_2 m = fib_cps_dfc(m, ID) 
+let fib_2 m = fib_cps_dfc (m, ID)
 
 (* A Eureka moment. Look closely at the definition of the type cnt. 
    These are just lists with ID = [] and two flavours of "cons"! 
    we can replace this type with a list of tagged integers. 
 
    I'll give the tags suggestive names. 
-*) 
+*)
 
-type tag = 
-  | SUB2 of int 
-  | PLUS of int 
-
-type tag_list_cnt = tag list 
+type tag = SUB2 of int | PLUS of int
+type tag_list_cnt = tag list
 
 (* apply_tag_list_cnt : tag_list_cnt * int -> int *)
-let rec apply_tag_list_cnt = function 
-  | ([], a)              -> a 
-  | ((SUB2 m) :: cnt, a) -> fib_cps_dfc_tags(m - 2, (PLUS a):: cnt)
-  | ((PLUS a) :: cnt, b) -> apply_tag_list_cnt (cnt, a + b)
+let rec apply_tag_list_cnt = function
+  | [], a -> a
+  | SUB2 m :: cnt, a -> fib_cps_dfc_tags (m - 2, PLUS a :: cnt)
+  | PLUS a :: cnt, b -> apply_tag_list_cnt (cnt, a + b)
 
-(* fib_cps_dfc_tags : (int * tag_list_cnt) -> int *) 
+(* fib_cps_dfc_tags : (int * tag_list_cnt) -> int *)
 and fib_cps_dfc_tags (m, cnt) =
-    if m = 0 
-    then apply_tag_list_cnt(cnt, 1) 
-    else if m = 1 
-         then apply_tag_list_cnt(cnt, 1) 
-         else fib_cps_dfc_tags(m - 1, (SUB2 m) :: cnt) 
+  if m = 0 then
+    apply_tag_list_cnt (cnt, 1)
+  else if m = 1 then
+    apply_tag_list_cnt (cnt, 1)
+  else
+    fib_cps_dfc_tags (m - 1, SUB2 m :: cnt)
 
 (*  fib_3 : int -> int *)
-let fib_3 m = fib_cps_dfc_tags(m, []) 
+let fib_3 m = fib_cps_dfc_tags (m, [])
 
 (* Another Eureka moment. Look closely at this code.  
 
@@ -134,29 +130,28 @@ let fib_3 m = fib_cps_dfc_tags(m, [])
    and one for transitions that start in apply_tag_list_cnt.)
 
    I'll give these states suggestive names. 
-*) 
+*)
 
-type state_type = 
-  | SUB1 (* for right-hand-sides starting with fib_   *) 
-  | APPL (* for right-hand-sides starting with apply_ *) 
+type state_type =
+  | SUB1 (* for right-hand-sides starting with fib_   *)
+  | APPL (* for right-hand-sides starting with apply_ *)
 
-type state = (state_type * int * tag_list_cnt) -> int 
+type state = state_type * int * tag_list_cnt -> int
 
 (* We now rewrite the version above as a state-transition evaluator 
    
    eval : state -> int 
-*) 
-let rec eval = function 
-  | (SUB1, 0, cnt            ) -> eval (APPL, 1,     cnt            ) 
-  | (SUB1, 1, cnt            ) -> eval (APPL, 1,     cnt            ) 
-  | (SUB1, m, cnt            ) -> eval (SUB1, (m-1), (SUB2 m) :: cnt) 
-  | (APPL, a, (SUB2 m) :: cnt) -> eval (SUB1, (m-2), (PLUS a) :: cnt)
-  | (APPL, b, (PLUS a) :: cnt) -> eval (APPL, (a+b), cnt            )
-  | (APPL, a, []             ) -> a 
-
+*)
+let rec eval = function
+  | SUB1, 0, cnt -> eval (APPL, 1, cnt)
+  | SUB1, 1, cnt -> eval (APPL, 1, cnt)
+  | SUB1, m, cnt -> eval (SUB1, m - 1, SUB2 m :: cnt)
+  | APPL, a, SUB2 m :: cnt -> eval (SUB1, m - 2, PLUS a :: cnt)
+  | APPL, b, PLUS a :: cnt -> eval (APPL, a + b, cnt)
+  | APPL, a, [] -> a
 
 (*  fib_4 : int -> int *)
-let fib_4 m = eval (SUB1, m, []) 
+let fib_4 m = eval (SUB1, m, [])
 
 (* Finally, The Fibonacci Machine! 
 
@@ -166,44 +161,39 @@ let fib_4 m = eval (SUB1, m, [])
    I'll add some pretty-printing at this point so that 
    we can watch our machine grind out Fibonacci numbers. 
 
-*) 
+*)
 
-(* step : state -> state *) 
-let step = function 
-  | (SUB1, 0, cnt            ) -> (APPL, 1,     cnt            ) 
-  | (SUB1, 1, cnt            ) -> (APPL, 1,     cnt            ) 
-  | (SUB1, m, cnt            ) -> (SUB1, (m-1), (SUB2 m) :: cnt) 
-  | (APPL, a, (SUB2 m) :: cnt) -> (SUB1, (m-2), (PLUS a) :: cnt)
-  | (APPL, b, (PLUS a) :: cnt) -> (APPL, (a+b), cnt            )
+(* step : state -> state *)
+let step = function
+  | SUB1, 0, cnt -> (APPL, 1, cnt)
+  | SUB1, 1, cnt -> (APPL, 1, cnt)
+  | SUB1, m, cnt -> (SUB1, m - 1, SUB2 m :: cnt)
+  | APPL, a, SUB2 m :: cnt -> (SUB1, m - 2, PLUS a :: cnt)
+  | APPL, b, PLUS a :: cnt -> (APPL, a + b, cnt)
   | _ -> failwith "step : runtime error!"
 
-let string_of_state_type = function 
-  | SUB1 -> "SUB1"
-  | APPL -> "APPL"
+let string_of_state_type = function SUB1 -> "SUB1" | APPL -> "APPL"
 
-let string_of_tag = function 
-  | SUB2 m -> "SUB2 " ^ (string_of_int m)
-  | PLUS m -> "PLUS " ^ (string_of_int m)
+let string_of_tag = function
+  | SUB2 m -> "SUB2 " ^ string_of_int m
+  | PLUS m -> "PLUS " ^ string_of_int m
 
-let rec string_of_tag_list_aux = function 
+let rec string_of_tag_list_aux = function
   | [] -> ""
-  | [t] -> (string_of_tag t)
-  | t :: rest -> (string_of_tag t) ^ ", " ^ (string_of_tag_list_aux rest)
+  | [ t ] -> string_of_tag t
+  | t :: rest -> string_of_tag t ^ ", " ^ string_of_tag_list_aux rest
 
-let string_of_tag_list l = "[" ^ (string_of_tag_list_aux l) ^ "]"
+let string_of_tag_list l = "[" ^ string_of_tag_list_aux l ^ "]"
 
-let print_state n (t, m, cnt) = 
-     print_string ((string_of_int n) ^ " " 
-		   ^ (string_of_state_type t)
-		   ^ " || "
-		   ^ (string_of_int m)
-		   ^ " || "
-                   (* reverse stack so that it grows to the right, shrinks to the left *) 
-		   ^ (string_of_tag_list (List.rev cnt))
-		   ^ "\n"
-		  )
+let print_state n (t, m, cnt) =
+  print_string
+    (string_of_int n ^ " " ^ string_of_state_type t ^ " || " ^ string_of_int m
+   ^ " || "
+     (* reverse stack so that it grows to the right, shrinks to the left *)
+    ^ string_of_tag_list (List.rev cnt)
+    ^ "\n")
 
-(* set to false if you don't want to watch the machine's transitions ... *) 
+(* set to false if you don't want to watch the machine's transitions ... *)
 let verbose = ref true
 
 (* eval_steps : int -> state 
@@ -212,19 +202,21 @@ let verbose = ref true
    into iteration (no stack).  Of course we have build "the stack" 
    into our machine ;-) 
 
-*) 
+*)
 let rec eval_steps n state =
-    let _ = if !verbose then print_state n state else () in 
-    match state with 
-    | (APPL, a, []) -> a 
-    | _ -> eval_steps (n + 1) (step state)
+  let _ =
+    if !verbose then
+      print_state n state
+    else
+      ()
+  in
+  match state with APPL, a, [] -> a | _ -> eval_steps (n + 1) (step state)
 
 (*  fib_5 : int -> int *)
-let fib_5 m = eval_steps 1 (SUB1, m, []) 
+let fib_5 m = eval_steps 1 (SUB1, m, [])
 
-(* just for testing to see if all versions return the same value *) 
-let fibs m = [fib m; fib_1 m; fib_2 m; fib_3 m; fib_4 m; fib_5 m] 
-
+(* just for testing to see if all versions return the same value *)
+let fibs m = [ fib m; fib_1 m; fib_2 m; fib_3 m; fib_4 m; fib_5 m ]
 
 (* Here is a trace of fib_5 6. 
    Note that the head of the stack is on the right, whereas it was on the left in the notes.
@@ -284,4 +276,3 @@ fib_5 6;;
 
 
 *)
-
