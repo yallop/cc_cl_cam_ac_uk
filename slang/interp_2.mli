@@ -2,22 +2,20 @@
 module IntMap : Map.S with type key = int
 
 type address = int
-
 type var = string
 
 type value =
-     | REF of address
-     | INT of int
-     | BOOL of bool
-     | UNIT
-     | PAIR of value * value
-     | INL of value
-     | INR of value
-     | CLOSURE of closure
-     | REC_CLOSURE of code
+  | REF of address
+  | INT of int
+  | BOOL of bool
+  | UNIT
+  | PAIR of value * value
+  | INL of value
+  | INR of value
+  | CLOSURE of closure
+  | REC_CLOSURE of code
 
 and closure = code * env
-
 
 and instruction =
   | PUSH of value
@@ -43,32 +41,22 @@ and instruction =
   | WHILE of code * code
 
 and code = instruction list
-
 and binding = Ast.var * value
-
 and env = binding list
 
 type env_or_value = EV of env | V of value
-
 type env_value_stack = env_or_value list
 
 (* array of referenced values together with next unallocated address *)
 type state = value IntMap.t * int
-
 type interp_state = code * env_value_stack * state
 
 val initial_state : state
-
 val initial_env : env_value_stack
-
-val step :  interp_state -> interp_state
-
+val step : interp_state -> interp_state
 val compile : Ast.expr -> code
-
 val driver : int -> interp_state -> value * state
-
 val interpret : Ast.expr -> value * state
-
 val string_of_instruction : instruction -> string
 val string_of_value : value -> string
 val string_of_env_or_value : env_or_value -> string
