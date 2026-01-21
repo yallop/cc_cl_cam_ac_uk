@@ -1,1 +1,3 @@
 (dirs :standard \ compiler-explorer)
+
+(data_only_dirs basic_transformations)

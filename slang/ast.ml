@@ -1,165 +1,134 @@
-type var = string
-type oper = ADD | MUL | DIV | SUB | LT | AND | OR | EQB | EQI
-type unary_oper = NEG | NOT | READ
+type var = string [@@deriving show]
 
-type expr =
+module Unary_op = struct
+  type t = Neg | Not | Read [@@deriving show { with_path = false }]
+
+  let to_fun : t -> 'a Value.t -> 'a Value.t = function
+    | Neg -> ( function Int i -> Int (-i) | _ -> failwith "")
+    | Not -> ( function Bool i -> Bool (not i) | _ -> failwith "")
+    | Read -> (
+        function
+        | Unit ->
+            print_string ">>> ";
+            Int (read_int ())
+        | _ -> failwith "")
+end
+
+module Binary_op = struct
+  type t = Add | Sub | Mul | Div | Lt | And | Or | Eqi | Eqb
+  [@@deriving show { with_path = false }]
+
+  let to_fun : t -> 'a Value.t * 'a Value.t -> 'a Value.t = function
+    | Add -> ( function Int m, Int n -> Int (m + n) | _ -> failwith "")
+    | Sub -> ( function Int m, Int n -> Int (m - n) | _ -> failwith "")
+    | Mul -> ( function Int m, Int n -> Int (m * n) | _ -> failwith "")
+    | Div -> ( function Int m, Int n -> Int (m / n) | _ -> failwith "")
+    | Lt -> ( function Int m, Int n -> Bool (m < n) | _ -> failwith "")
+    | And -> ( function Bool m, Bool n -> Bool (m && n) | _ -> failwith "")
+    | Or -> ( function Bool m, Bool n -> Bool (m || n) | _ -> failwith "")
+    | Eqi -> ( function Int m, Int n -> Bool (m = n) | _ -> failwith "")
+    | Eqb -> ( function Bool m, Bool n -> Bool (m = n) | _ -> failwith "")
+end
+
+type t =
   | Unit
   | Var of var
   | Integer of int
   | Boolean of bool
-  | UnaryOp of unary_oper * expr
-  | Op of expr * oper * expr
-  | If of expr * expr * expr
-  | Pair of expr * expr
-  | Fst of expr
-  | Snd of expr
-  | Inl of expr
-  | Inr of expr
-  | Case of expr * lambda * lambda
-  | While of expr * expr
-  | Seq of expr list
-  | Ref of expr
-  | Deref of expr
-  | Assign of expr * expr
+  | UnaryOp of Unary_op.t * t
+  | BinaryOp of t * Binary_op.t * t
+  | If of t * t * t
+  | Pair of t * t
+  | Fst of t
+  | Snd of t
+  | Inl of t
+  | Inr of t
+  | Case of t * lambda * lambda
+  | While of t * t
+  | Seq of t list
+  | Ref of t
+  | Deref of t
+  | Assign of t * t
   | Lambda of lambda
-  | App of expr * expr
-  | LetFun of var * lambda * expr
-  | LetRecFun of var * lambda * expr
+  | App of t * t
+  | LetFun of var * lambda * t
+  | LetRecFun of var * lambda * t
+[@@deriving show { with_path = false }]
 
-and lambda = var * expr
+and lambda = var * t
 
 open Format
 
-(*
-   Documentation of Format can be found here:
-   http://caml.inria.fr/resources/doc/guides/format.en.html
-   http://caml.inria.fr/pub/docs/manual-ocaml/libref/Format.html
-*)
+(** Documentation of Format can be found here:
+    http://caml.inria.fr/resources/doc/guides/format.en.html
+    http://caml.inria.fr/pub/docs/manual-ocaml/libref/Format.html *)
 
-let pp_uop = function NEG -> "-" | NOT -> "~" | READ -> "read"
-
-let pp_bop = function
-  | ADD -> "+"
-  | MUL -> "*"
-  | DIV -> "/"
-  | SUB -> "-"
-  | LT -> "<"
-  | EQI -> "eqi"
-  | EQB -> "eqb"
-  | AND -> "&&"
-  | OR -> "||"
-
-let string_of_oper = pp_bop
-let string_of_unary_oper = pp_uop
-let fstring ppf s = fprintf ppf "%s" s
-let pp_unary ppf t = fstring ppf (pp_uop t)
-let pp_binary ppf t = fstring ppf (pp_bop t)
-
-let rec pp_expr ppf = function
-  | Unit -> fstring ppf "()"
-  | Var x -> fstring ppf x
-  | Integer n -> fstring ppf (string_of_int n)
-  | Boolean b -> fstring ppf (string_of_bool b)
-  | UnaryOp (op, e) -> fprintf ppf "%a(%a)" pp_unary op pp_expr e
-  | Op (e1, op, e2) ->
-      fprintf ppf "(%a %a %a)" pp_expr e1 pp_binary op pp_expr e2
-  | If (e1, e2, e3) ->
-      fprintf ppf "@[if %a then %a else %a @]" pp_expr e1 pp_expr e2 pp_expr e3
-  | Pair (e1, e2) -> fprintf ppf "(%a, %a)" pp_expr e1 pp_expr e2
-  | Fst e -> fprintf ppf "fst(%a)" pp_expr e
-  | Snd e -> fprintf ppf "snd(%a)" pp_expr e
-  | Inl e -> fprintf ppf "inl(%a)" pp_expr e
-  | Inr e -> fprintf ppf "inr(%a)" pp_expr e
-  | Case (e, (x1, e1), (x2, e2)) ->
-      fprintf ppf "@[<2>case %a of@ | inl %a -> %a @ | inr %a -> %a end@]"
-        pp_expr e fstring x1 pp_expr e1 fstring x2 pp_expr e2
-  | Lambda (x, e) -> fprintf ppf "(fun %a -> %a)" fstring x pp_expr e
-  | App (e1, e2) -> fprintf ppf "%a %a" pp_expr e1 pp_expr e2
-  | Seq el -> fprintf ppf "begin %a end" pp_expr_list el
-  | While (e1, e2) -> fprintf ppf "while %a do %a end" pp_expr e1 pp_expr e2
-  | Ref e -> fprintf ppf "ref(%a)" pp_expr e
-  | Deref e -> fprintf ppf "!(%a)" pp_expr e
-  | Assign (e1, e2) -> fprintf ppf "(%a := %a)" pp_expr e1 pp_expr e2
-  | LetFun (f, (x, e1), e2) ->
-      fprintf ppf "@[let %a(%a) =@ %a @ in %a @ end@]" fstring f fstring x
-        pp_expr e1 pp_expr e2
-  | LetRecFun (f, (x, e1), e2) ->
-      fprintf ppf "@[letrec %a(%a) =@ %a @ in %a @ end@]" fstring f fstring x
-        pp_expr e1 pp_expr e2
-
-and pp_expr_list ppf = function
-  | [] -> ()
-  | [ e ] -> pp_expr ppf e
-  | e :: rest -> fprintf ppf "%a; %a" pp_expr e pp_expr_list rest
-
-let print_expr e =
-  let _ = pp_expr std_formatter e in
-  print_flush ()
-
-let eprint_expr e =
-  let _ = pp_expr err_formatter e in
-  pp_print_flush err_formatter ()
-
-(* useful for debugging *)
-
-let string_of_uop = function NEG -> "NEG" | NOT -> "NOT" | READ -> "READ"
-
-let string_of_bop = function
-  | ADD -> "ADD"
-  | MUL -> "MUL"
-  | DIV -> "DIV"
-  | SUB -> "SUB"
-  | LT -> "LT"
-  | EQI -> "EQI"
-  | EQB -> "EQB"
-  | AND -> "AND"
-  | OR -> "OR"
-
-let mk_con con l =
-  let rec aux carry = function
-    | [] -> carry ^ ")"
-    | [ s ] -> carry ^ s ^ ")"
-    | s :: rest -> aux (carry ^ s ^ ", ") rest
+let rec pp_aux (prec : int) (ppf : formatter) =
+  let pfprintf (prec' : int) ppf format =
+    if prec' < prec then
+      fprintf ppf ("(" ^^ format ^^ ")")
+    else
+      fprintf ppf format
   in
-  aux (con ^ "(") l
-
-let rec string_of_expr = function
-  | Unit -> "Unit"
-  | Var x -> mk_con "Var" [ x ]
-  | Integer n -> mk_con "Integer" [ string_of_int n ]
-  | Boolean b -> mk_con "Boolean" [ string_of_bool b ]
-  | UnaryOp (op, e) -> mk_con "UnaryOp" [ string_of_uop op; string_of_expr e ]
-  | Op (e1, op, e2) ->
-      mk_con "Op" [ string_of_expr e1; string_of_bop op; string_of_expr e2 ]
+  function
+  | Unit -> pfprintf 1000 ppf "()"
+  | Pair (e1, e2) ->
+      pfprintf 1000 ppf "(@[%a,@ %a@])" (pp_aux 0) e1 (pp_aux 0) e2
+  | Var x -> pfprintf 1000 ppf "%s" x
+  | Integer n -> pfprintf 1000 ppf "%d" n
+  | Boolean b -> pfprintf 1000 ppf "%b" b
+  | UnaryOp (Neg, e) -> pfprintf 900 ppf "-%a" (pp_aux 900) e
+  | UnaryOp (Not, e) -> pfprintf 900 ppf "~%a" (pp_aux 900) e
+  | UnaryOp (Read, e) -> pfprintf 900 ppf "?%a" (pp_aux 900) e
+  | Deref e -> pfprintf 900 ppf "!%a" (pp_aux 900) e
+  | App (e1, e2) -> pfprintf 800 ppf "%a %a" (pp_aux 800) e1 (pp_aux 800) e2
+  | Fst e -> pfprintf 800 ppf "fst %a" (pp_aux 800) e
+  | Snd e -> pfprintf 800 ppf "snd %a" (pp_aux 800) e
+  | Inl e -> pfprintf 800 ppf "inl %a" (pp_aux 800) e
+  | Inr e -> pfprintf 800 ppf "inr %a" (pp_aux 800) e
+  | Ref e -> pfprintf 800 ppf "ref %a" (pp_aux 800) e
+  | BinaryOp (e1, Mul, e2) ->
+      pfprintf 750 ppf "%a * %a" (pp_aux 750) e1 (pp_aux 751) e2
+  | BinaryOp (e1, Div, e2) ->
+      pfprintf 750 ppf "%a / %a" (pp_aux 750) e1 (pp_aux 751) e2
+  | BinaryOp (e1, Add, e2) ->
+      pfprintf 740 ppf "%a + %a" (pp_aux 740) e1 (pp_aux 741) e2
+  | BinaryOp (e1, Sub, e2) ->
+      pfprintf 740 ppf "%a - %a" (pp_aux 740) e1 (pp_aux 741) e2
+  | BinaryOp (e1, Lt, e2) ->
+      pfprintf 730 ppf "%a < %a" (pp_aux 730) e1 (pp_aux 731) e2
+  | BinaryOp (e1, And, e2) ->
+      pfprintf 720 ppf "%a && %a" (pp_aux 721) e1 (pp_aux 720) e2
+  | BinaryOp (e1, Or, e2) ->
+      pfprintf 710 ppf "%a || %a" (pp_aux 711) e1 (pp_aux 710) e2
+  | BinaryOp (e1, Eqi, e2) ->
+      pfprintf 700 ppf "%a = %a" (pp_aux 700) e1 (pp_aux 701) e2
+  | BinaryOp (e1, Eqb, e2) ->
+      pfprintf 700 ppf "%a = %a" (pp_aux 700) e1 (pp_aux 701) e2
   | If (e1, e2, e3) ->
-      mk_con "If" [ string_of_expr e1; string_of_expr e2; string_of_expr e3 ]
-  | Pair (e1, e2) -> mk_con "Pair" [ string_of_expr e1; string_of_expr e2 ]
-  | Fst e -> mk_con "Fst" [ string_of_expr e ]
-  | Snd e -> mk_con "Snd" [ string_of_expr e ]
-  | Inl e -> mk_con "Inl" [ string_of_expr e ]
-  | Inr e -> mk_con "Inr" [ string_of_expr e ]
-  | Lambda (x, e) -> mk_con "Lambda" [ x; string_of_expr e ]
-  | App (e1, e2) -> mk_con "App" [ string_of_expr e1; string_of_expr e2 ]
-  | Seq el -> mk_con "Seq" [ string_of_expr_list el ]
-  | While (e1, e2) -> mk_con "While" [ string_of_expr e1; string_of_expr e2 ]
-  | Ref e -> mk_con "Ref" [ string_of_expr e ]
-  | Deref e -> mk_con "Deref" [ string_of_expr e ]
-  | Assign (e1, e2) -> mk_con "Assign" [ string_of_expr e1; string_of_expr e2 ]
-  | LetFun (f, (x, e1), e2) ->
-      mk_con "LetFun"
-        [ f; mk_con "" [ x; string_of_expr e1 ]; string_of_expr e2 ]
-  | LetRecFun (f, (x, e1), e2) ->
-      mk_con "LetRecFun"
-        [ f; mk_con "" [ x; string_of_expr e1 ]; string_of_expr e2 ]
+      pfprintf 100 ppf
+        "@[<v>@[<hv>if@;<1 2>%a@ then@]@;<1 2>%a@ else@;<1 2>@[%a@]@]"
+        (pp_aux 100) e1 (pp_aux 0) e2 (pp_aux 0) e3
   | Case (e, (x1, e1), (x2, e2)) ->
-      mk_con "Case"
-        [
-          string_of_expr e;
-          mk_con "" [ x1; string_of_expr e1 ];
-          mk_con "" [ x2; string_of_expr e2 ];
-        ]
+      pfprintf 100 ppf
+        "@[<v 2>case %a of@\n| inl %s ->@;<1 4>%a @\n| inr %s ->@;<1 4>%a@]"
+        (pp_aux 0) e x1 (pp_aux 0) e1 x2 (pp_aux 0) e2
+  | Seq es ->
+      pfprintf 100 ppf "@[<v>%a@]"
+        (pp_print_list ~pp_sep:(fun ppf () -> fprintf ppf ";@ ") (pp_aux 100))
+        es
+  | While (e1, e2) ->
+      pfprintf 100 ppf "@[<v>@[<hv>while@;<1 2>%a@ do@]@;<1 2>%a@]" (pp_aux 100)
+        e1 (pp_aux 100) e2
+  | Assign (e1, e2) ->
+      pfprintf 200 ppf "%a := %a" (pp_aux 201) e1 (pp_aux 200) e2
+  | Lambda (x, e) ->
+      pfprintf 100 ppf "@[fun %s ->@;<1 2>@[%a@]@]" x (pp_aux 100) e
+  | LetFun (f, (x, e1), e2) ->
+      pfprintf 100 ppf "@[<hv>let %s %s =@;<1 2>%a@ in@\n%a@]" f x (pp_aux 100)
+        e1 (pp_aux 100) e2
+  | LetRecFun (f, (x, e1), e2) ->
+      pfprintf 100 ppf "@[<hv>let rec %s %s =@;<1 2>%a@ in@\n%a@]" f x
+        (pp_aux 100) e1 (pp_aux 100) e2
 
-and string_of_expr_list = function
-  | [] -> ""
-  | [ e ] -> string_of_expr e
-  | e :: rest -> string_of_expr e ^ "; " ^ string_of_expr_list rest
+let pp_nice = pp_aux 0
